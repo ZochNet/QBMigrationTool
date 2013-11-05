@@ -141,7 +141,7 @@ namespace CustomerAdd
             this.tbResults.Multiline = true;
             this.tbResults.Name = "tbResults";
             this.tbResults.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.tbResults.Size = new System.Drawing.Size(774, 421);
+            this.tbResults.Size = new System.Drawing.Size(774, 678);
             this.tbResults.TabIndex = 15;
             // 
             // btnQueryCustomer
@@ -167,7 +167,7 @@ namespace CustomerAdd
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-            this.ClientSize = new System.Drawing.Size(801, 537);
+            this.ClientSize = new System.Drawing.Size(801, 794);
             this.Controls.Add(this.btnSyncCustomerSite);
             this.Controls.Add(this.btnQueryCustomer);
             this.Controls.Add(this.tbResults);
@@ -258,13 +258,48 @@ namespace CustomerAdd
             {
                 string response = DoRequest(BuildCustomerQueryAllActive());
                 List<Customer> activeCustomers = GetActiveCustomersFromResponse(response);
+                int count = activeCustomers.Count;
+                int current = 1;
+
+                tbResults.Text = "";
 
                 foreach (Customer customer in activeCustomers)
                 {
-                    response = DoRequest(BuildSyncShipToToCustomSiteQuery(customer.ListID, customer.ShipTo));
+                    if (customer.Site.Name == null || customer.Site.Name == "")
+                    {
+                        if (customer.ShipTo.Name != null && customer.ShipTo.Name != "")
+                        {
+                            TextBox tb = new TextBox();
+                            tb.Text = customer.Name;
+                            tb.Text += " BEFORE";
+                            tb.Text += (" (" + current.ToString() + " of " + count.ToString() + ")");
+                            AppendNewLine(tb);
+
+                            AppendShipToDetails(tb, customer.ShipTo);
+                            AppendNewLine(tb);
+
+                            AppendSiteDetails(tb, customer.Site);
+                            AppendNewLine(tb);
+                    
+                            response = DoRequest(BuildSyncShipToToCustomSiteQuery(customer.ListID, customer.ShipTo));
+                            tb.Text += customer.Name;
+                            tb.Text += " AFTER";
+                            AppendNewLine(tb);
+
+                            response = DoRequest(BuildCustomerQuery(customer.ListID));
+                            Site site = GetSiteFromResponse(response);
+                            AppendSiteDetails(tb, site);
+                            AppendNewLine(tb);
+
+                            tbResults.Text = tb.Text + tbResults.Text;
+                        }
+                    }                    
+
+                    current++;
+                    Application.DoEvents();                                        
                 }
 
-                tbResults.Text = "Done";
+                tbResults.Text += "Done";
             }
             catch (Exception ex)
             {
@@ -399,8 +434,6 @@ namespace CustomerAdd
             XmlNodeList CustomerQueryRsList = responseXmlDoc.GetElementsByTagName("CustomerQueryRs");
             if (CustomerQueryRsList.Count == 1) //Should always be true since we only did one request in this sample
             {
-                Customer customer = new Customer();
-
                 XmlNode responseNode = CustomerQueryRsList.Item(0);
                 //Check the status code, info, and severity
                 XmlAttributeCollection rsAttributes = responseNode.Attributes;
@@ -415,7 +448,27 @@ namespace CustomerAdd
                     for (int i = 0; i < CustomerRetList.Count; i++)
                     {
                         XmlNode CustomerRet = CustomerRetList.Item(i);
-                        
+                                                
+                        string Sublevel = CustomerRet.SelectSingleNode("./Sublevel").InnerText;
+                        if (Sublevel == "0" || Sublevel == "1")
+                        {
+                            bool IsJob = false;                            
+                            XmlNode ParentRef = CustomerRet.SelectSingleNode("./ParentRef");
+                            if (ParentRef != null)
+                            {
+                                IsJob = true;                                
+                            }
+
+                            if (IsJob)
+                            {
+                                Customer customer = new Customer();
+                                customer.Name = CustomerRet.SelectSingleNode("./Name").InnerText;
+                                customer.ListID = CustomerRet.SelectSingleNode("./ListID").InnerText;
+                                customer.ShipTo = GetShipToFromCustomerRet(CustomerRet);
+                                customer.Site = GetSiteFromCustomerRet(CustomerRet);
+                                customers.Add(customer);
+                            }
+                        }
                     }                    
                 }
             }
@@ -618,9 +671,10 @@ namespace CustomerAdd
             qbXMLMsgsRq.AppendChild(custAddRq);
             custAddRq.SetAttribute("requestID", "1");
 
+            custAddRq.AppendChild(MakeSimpleElem(doc, "MaxReturned", "11"));
             custAddRq.AppendChild(MakeSimpleElem(doc, "ActiveStatus", "ActiveOnly"));
             custAddRq.AppendChild(MakeSimpleElem(doc, "OwnerID", "0"));
-
+            
             return doc;
         }
 

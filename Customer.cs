@@ -8,6 +8,7 @@ namespace CustomerAdd
     public class Customer
     {
         public string ListID { get; set; }
+        public string Name { get; set; }
         public ShipTo ShipTo { get; set; }
         public Site Site { get; set; }
     }
