@@ -39,10 +39,11 @@ namespace CustomerAdd
         private System.Windows.Forms.Button Exit;
 		private System.Windows.Forms.TextBox tbQBListID;
 		private System.Windows.Forms.Label label1;
-        private Button SyncAllActiveMissingSiteData;
+        private Button btnSyncAllActiveMissingSiteDataOnly;
         private TextBox tbResults;
         private Button btnQueryCustomer;
         private Button btnSyncCustomerSite;
+        private Button btnSyncAllActive;
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
@@ -86,10 +87,11 @@ namespace CustomerAdd
             this.Exit = new System.Windows.Forms.Button();
             this.tbQBListID = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.SyncAllActiveMissingSiteData = new System.Windows.Forms.Button();
+            this.btnSyncAllActiveMissingSiteDataOnly = new System.Windows.Forms.Button();
             this.tbResults = new System.Windows.Forms.TextBox();
             this.btnQueryCustomer = new System.Windows.Forms.Button();
             this.btnSyncCustomerSite = new System.Windows.Forms.Button();
+            this.btnSyncAllActive = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // label3
@@ -113,7 +115,7 @@ namespace CustomerAdd
             // 
             this.tbQBListID.Location = new System.Drawing.Point(80, 16);
             this.tbQBListID.Name = "tbQBListID";
-            this.tbQBListID.Size = new System.Drawing.Size(213, 20);
+            this.tbQBListID.Size = new System.Drawing.Size(238, 20);
             this.tbQBListID.TabIndex = 8;
             this.tbQBListID.Text = "80000B28-1383332088";
             // 
@@ -125,15 +127,15 @@ namespace CustomerAdd
             this.label1.TabIndex = 7;
             this.label1.Text = "QB ListID";
             // 
-            // SyncAllActiveMissingSiteData
+            // btnSyncAllActiveMissingSiteDataOnly
             // 
-            this.SyncAllActiveMissingSiteData.Location = new System.Drawing.Point(606, 42);
-            this.SyncAllActiveMissingSiteData.Name = "SyncAllActiveMissingSiteData";
-            this.SyncAllActiveMissingSiteData.Size = new System.Drawing.Size(183, 23);
-            this.SyncAllActiveMissingSiteData.TabIndex = 14;
-            this.SyncAllActiveMissingSiteData.Text = "Sync All Active Missing Site Data";
-            this.SyncAllActiveMissingSiteData.UseVisualStyleBackColor = true;
-            this.SyncAllActiveMissingSiteData.Click += new System.EventHandler(this.btnSyncSitesToCustomFields_Click);
+            this.btnSyncAllActiveMissingSiteDataOnly.Location = new System.Drawing.Point(455, 42);
+            this.btnSyncAllActiveMissingSiteDataOnly.Name = "btnSyncAllActiveMissingSiteDataOnly";
+            this.btnSyncAllActiveMissingSiteDataOnly.Size = new System.Drawing.Size(230, 23);
+            this.btnSyncAllActiveMissingSiteDataOnly.TabIndex = 14;
+            this.btnSyncAllActiveMissingSiteDataOnly.Text = "Sync All Active Missing Site Data Only";
+            this.btnSyncAllActiveMissingSiteDataOnly.UseVisualStyleBackColor = true;
+            this.btnSyncAllActiveMissingSiteDataOnly.Click += new System.EventHandler(this.btnSyncAllActiveMissingSiteDataOnly_Click);
             // 
             // tbResults
             // 
@@ -148,7 +150,7 @@ namespace CustomerAdd
             // 
             this.btnQueryCustomer.Location = new System.Drawing.Point(12, 42);
             this.btnQueryCustomer.Name = "btnQueryCustomer";
-            this.btnQueryCustomer.Size = new System.Drawing.Size(139, 23);
+            this.btnQueryCustomer.Size = new System.Drawing.Size(156, 23);
             this.btnQueryCustomer.TabIndex = 16;
             this.btnQueryCustomer.Text = "Query Ship To / Site Data";
             this.btnQueryCustomer.UseVisualStyleBackColor = true;
@@ -156,22 +158,33 @@ namespace CustomerAdd
             // 
             // btnSyncCustomerSite
             // 
-            this.btnSyncCustomerSite.Location = new System.Drawing.Point(157, 42);
+            this.btnSyncCustomerSite.Location = new System.Drawing.Point(174, 42);
             this.btnSyncCustomerSite.Name = "btnSyncCustomerSite";
-            this.btnSyncCustomerSite.Size = new System.Drawing.Size(136, 23);
+            this.btnSyncCustomerSite.Size = new System.Drawing.Size(144, 23);
             this.btnSyncCustomerSite.TabIndex = 17;
             this.btnSyncCustomerSite.Text = "Sync Ship To/Site Data";
             this.btnSyncCustomerSite.UseVisualStyleBackColor = true;
             this.btnSyncCustomerSite.Click += new System.EventHandler(this.btnSyncCustomerSite_Click);
             // 
+            // btnSyncAllActive
+            // 
+            this.btnSyncAllActive.Location = new System.Drawing.Point(691, 42);
+            this.btnSyncAllActive.Name = "btnSyncAllActive";
+            this.btnSyncAllActive.Size = new System.Drawing.Size(98, 23);
+            this.btnSyncAllActive.TabIndex = 18;
+            this.btnSyncAllActive.Text = "Sync All Active";
+            this.btnSyncAllActive.UseVisualStyleBackColor = true;
+            this.btnSyncAllActive.Click += new System.EventHandler(this.btnSyncAllActive_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(801, 794);
+            this.Controls.Add(this.btnSyncAllActive);
             this.Controls.Add(this.btnSyncCustomerSite);
             this.Controls.Add(this.btnQueryCustomer);
             this.Controls.Add(this.tbResults);
-            this.Controls.Add(this.SyncAllActiveMissingSiteData);
+            this.Controls.Add(this.btnSyncAllActiveMissingSiteDataOnly);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.Exit);
             this.Controls.Add(this.tbQBListID);
@@ -219,7 +232,7 @@ namespace CustomerAdd
                 Site site = GetSiteFromResponse(response);
                 AppendSiteDetails(tbResults, site);
 
-                AppendNewLine(tbResults);
+                tbResults.AppendText(Environment.NewLine);                
 
                 ShipTo shipTo = GetShipToFromResponse(response);
                 AppendShipToDetails(tbResults, shipTo);
@@ -249,49 +262,44 @@ namespace CustomerAdd
             {
                 tbResults.Text = ex.Message;
             }
-            
         }
 
-        private void btnSyncSitesToCustomFields_Click(object sender, EventArgs e)
+        private void btnSyncAllActiveMissingSiteDataOnly_Click(object sender, EventArgs e)
         {
+            SyncSitesToCustomFields(false);
+        }
+
+        private void btnSyncAllActive_Click(object sender, EventArgs e)
+        {
+            SyncSitesToCustomFields(true);
+        }
+
+        private void SyncSitesToCustomFields(bool doAll)
+        {
+            tbResults.Text = "";
+
             try
             {
                 string response = DoRequest(BuildCustomerQueryAllActive());
                 List<Customer> activeCustomers = GetActiveCustomersFromResponse(response);
                 int count = activeCustomers.Count;
                 int current = 1;
-
-                tbResults.Text = "";
-
+                                
                 foreach (Customer customer in activeCustomers)
                 {
-                    if (customer.Site.Name == null || customer.Site.Name == "")
+                    if (doAll || (customer.Site.Name == null) || (customer.Site.Name == ""))
                     {
-                        if (customer.ShipTo.Name != null && customer.ShipTo.Name != "")
+                        if ((customer.ShipTo.Name != null) && (customer.ShipTo.Name != ""))
                         {
-                            TextBox tb = new TextBox();
-                            tb.Text = customer.Name;
-                            tb.Text += " BEFORE";
-                            tb.Text += (" (" + current.ToString() + " of " + count.ToString() + ")");
-                            AppendNewLine(tb);
-
-                            AppendShipToDetails(tb, customer.ShipTo);
-                            AppendNewLine(tb);
-
-                            AppendSiteDetails(tb, customer.Site);
-                            AppendNewLine(tb);
+                            tbResults.AppendText("Processing: ");
+                            tbResults.AppendText(customer.Name);                            
+                            tbResults.AppendText (" (" + current.ToString() + " of " + count.ToString() + ")");
+                            tbResults.AppendText(Environment.NewLine);
                     
-                            response = DoRequest(BuildSyncShipToToCustomSiteQuery(customer.ListID, customer.ShipTo));
-                            tb.Text += customer.Name;
-                            tb.Text += " AFTER";
-                            AppendNewLine(tb);
-
-                            response = DoRequest(BuildCustomerQuery(customer.ListID));
-                            Site site = GetSiteFromResponse(response);
-                            AppendSiteDetails(tb, site);
-                            AppendNewLine(tb);
-
-                            tbResults.Text = tb.Text + tbResults.Text;
+                            response = DoRequest(BuildSyncShipToToCustomSiteQuery(customer.ListID, customer.ShipTo));                  
+                                                        
+                            tbResults.Select(tbResults.Text.Length, 0);
+                            tbResults.ScrollToCaret();
                         }
                     }                    
 
@@ -299,77 +307,76 @@ namespace CustomerAdd
                     Application.DoEvents();                                        
                 }
 
-                tbResults.Text += "Done";
+                tbResults.AppendText("Done");
+                tbResults.Select(tbResults.Text.Length, 0);
+                tbResults.ScrollToCaret();
             }
             catch (Exception ex)
             {
-                tbResults.Text = ex.Message;
+                tbResults.AppendText(ex.Message);
+                tbResults.Select(tbResults.Text.Length, 0);
+                tbResults.ScrollToCaret();
             }
         }
 
         private void AppendSiteDetails(TextBox tb, Site site)
         {
             tb.Text += "Site Details";
-            AppendNewLine(tb);
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "Name: ";
             tb.Text += site.Name;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "Unit Number: ";
             tb.Text += site.UnitNumber;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "County: ";
             tb.Text += site.County;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "City/State: ";
             tb.Text += site.CityState;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "POAFE Number: ";
             tb.Text += site.POAFENumber;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
         }
 
         private void AppendShipToDetails(TextBox tb, ShipTo shipTo)
         {
             tb.Text += "Ship To Details";
-            AppendNewLine(tb);
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "Name: ";
             tb.Text += shipTo.Name;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "Addr1: ";
             tb.Text += shipTo.Addr1;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "Addr2: ";
             tb.Text += shipTo.Addr2;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "Addr3: ";
             tb.Text += shipTo.Addr3;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "City: ";
             tb.Text += shipTo.City;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "State: ";
             tb.Text += shipTo.State;
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
 
             tb.Text += "Note: ";
             tb.Text += shipTo.Note;
-            tb.Text += "\r\n";
-        }
-
-        private void AppendNewLine(TextBox tb)
-        {
-            tb.Text += "\r\n";
+            tb.AppendText(Environment.NewLine);
         }
 
         private Site GetSiteFromCustomerRet(XmlNode CustomerRet)
@@ -671,7 +678,7 @@ namespace CustomerAdd
             qbXMLMsgsRq.AppendChild(custAddRq);
             custAddRq.SetAttribute("requestID", "1");
 
-            custAddRq.AppendChild(MakeSimpleElem(doc, "MaxReturned", "11"));
+            //custAddRq.AppendChild(MakeSimpleElem(doc, "MaxReturned", "3"));
             custAddRq.AppendChild(MakeSimpleElem(doc, "ActiveStatus", "ActiveOnly"));
             custAddRq.AppendChild(MakeSimpleElem(doc, "OwnerID", "0"));
             
