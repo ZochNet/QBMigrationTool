@@ -66,6 +66,7 @@
     <Reference Include="Interop.QBXMLRP2">
       <Name>Interop.QBXMLRP2</Name>
       <HintPath>..\..\..\..\..\..\..\..\..\..\Program Files\Common Files\Intuit\QuickBooks\Interop.QBXMLRP2.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System">
       <Name>System</Name>

@@ -44,6 +44,9 @@ namespace CustomerAdd
         private Button btnQueryCustomer;
         private Button btnSyncCustomerSite;
         private Button btnSyncAllActive;
+        private Button btnGetQBListID;
+        private TextBox tbWorkOrderNumber;
+        private Label label2;
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
@@ -92,11 +95,14 @@ namespace CustomerAdd
             this.btnQueryCustomer = new System.Windows.Forms.Button();
             this.btnSyncCustomerSite = new System.Windows.Forms.Button();
             this.btnSyncAllActive = new System.Windows.Forms.Button();
+            this.btnGetQBListID = new System.Windows.Forms.Button();
+            this.tbWorkOrderNumber = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // label3
             // 
-            this.label3.Location = new System.Drawing.Point(12, 80);
+            this.label3.Location = new System.Drawing.Point(12, 131);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(333, 17);
             this.label3.TabIndex = 13;
@@ -104,7 +110,7 @@ namespace CustomerAdd
             // 
             // Exit
             // 
-            this.Exit.Location = new System.Drawing.Point(669, 74);
+            this.Exit.Location = new System.Drawing.Point(669, 16);
             this.Exit.Name = "Exit";
             this.Exit.Size = new System.Drawing.Size(120, 24);
             this.Exit.TabIndex = 12;
@@ -129,7 +135,7 @@ namespace CustomerAdd
             // 
             // btnSyncAllActiveMissingSiteDataOnly
             // 
-            this.btnSyncAllActiveMissingSiteDataOnly.Location = new System.Drawing.Point(455, 42);
+            this.btnSyncAllActiveMissingSiteDataOnly.Location = new System.Drawing.Point(455, 122);
             this.btnSyncAllActiveMissingSiteDataOnly.Name = "btnSyncAllActiveMissingSiteDataOnly";
             this.btnSyncAllActiveMissingSiteDataOnly.Size = new System.Drawing.Size(230, 23);
             this.btnSyncAllActiveMissingSiteDataOnly.TabIndex = 14;
@@ -139,16 +145,16 @@ namespace CustomerAdd
             // 
             // tbResults
             // 
-            this.tbResults.Location = new System.Drawing.Point(15, 104);
+            this.tbResults.Location = new System.Drawing.Point(15, 151);
             this.tbResults.Multiline = true;
             this.tbResults.Name = "tbResults";
             this.tbResults.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.tbResults.Size = new System.Drawing.Size(774, 678);
+            this.tbResults.Size = new System.Drawing.Size(774, 631);
             this.tbResults.TabIndex = 15;
             // 
             // btnQueryCustomer
             // 
-            this.btnQueryCustomer.Location = new System.Drawing.Point(12, 42);
+            this.btnQueryCustomer.Location = new System.Drawing.Point(324, 16);
             this.btnQueryCustomer.Name = "btnQueryCustomer";
             this.btnQueryCustomer.Size = new System.Drawing.Size(156, 23);
             this.btnQueryCustomer.TabIndex = 16;
@@ -158,7 +164,7 @@ namespace CustomerAdd
             // 
             // btnSyncCustomerSite
             // 
-            this.btnSyncCustomerSite.Location = new System.Drawing.Point(174, 42);
+            this.btnSyncCustomerSite.Location = new System.Drawing.Point(486, 16);
             this.btnSyncCustomerSite.Name = "btnSyncCustomerSite";
             this.btnSyncCustomerSite.Size = new System.Drawing.Size(144, 23);
             this.btnSyncCustomerSite.TabIndex = 17;
@@ -168,7 +174,7 @@ namespace CustomerAdd
             // 
             // btnSyncAllActive
             // 
-            this.btnSyncAllActive.Location = new System.Drawing.Point(691, 42);
+            this.btnSyncAllActive.Location = new System.Drawing.Point(691, 122);
             this.btnSyncAllActive.Name = "btnSyncAllActive";
             this.btnSyncAllActive.Size = new System.Drawing.Size(98, 23);
             this.btnSyncAllActive.TabIndex = 18;
@@ -176,10 +182,39 @@ namespace CustomerAdd
             this.btnSyncAllActive.UseVisualStyleBackColor = true;
             this.btnSyncAllActive.Click += new System.EventHandler(this.btnSyncAllActive_Click);
             // 
+            // btnGetQBListID
+            // 
+            this.btnGetQBListID.Location = new System.Drawing.Point(324, 47);
+            this.btnGetQBListID.Name = "btnGetQBListID";
+            this.btnGetQBListID.Size = new System.Drawing.Size(89, 23);
+            this.btnGetQBListID.TabIndex = 19;
+            this.btnGetQBListID.Text = "Get QBListID";
+            this.btnGetQBListID.UseVisualStyleBackColor = true;
+            this.btnGetQBListID.Click += new System.EventHandler(this.btnGetQBListID_Click);
+            // 
+            // tbWorkOrderNumber
+            // 
+            this.tbWorkOrderNumber.Location = new System.Drawing.Point(80, 47);
+            this.tbWorkOrderNumber.Name = "tbWorkOrderNumber";
+            this.tbWorkOrderNumber.Size = new System.Drawing.Size(238, 20);
+            this.tbWorkOrderNumber.TabIndex = 20;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(12, 47);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(36, 13);
+            this.label2.TabIndex = 21;
+            this.label2.Text = "WO #";
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(801, 794);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.tbWorkOrderNumber);
+            this.Controls.Add(this.btnGetQBListID);
             this.Controls.Add(this.btnSyncAllActive);
             this.Controls.Add(this.btnSyncCustomerSite);
             this.Controls.Add(this.btnQueryCustomer);
@@ -213,6 +248,42 @@ namespace CustomerAdd
             XmlElement elem = doc.CreateElement(tagName);
             elem.InnerText = tagVal;
             return elem;
+        }
+
+        private void btnGetQBListID_Click(object sender, EventArgs e)
+        {
+            String woNum = tbWorkOrderNumber.Text.Trim();
+            if (woNum.Length == 0)
+            {
+                MessageBox.Show("Please enter a Work Order Number.", "Input Validation");
+                return;
+            }
+            try
+            {
+                string response = DoRequest(BuildCustomerQueryByWorkorderNum(woNum));
+                tbResults.Text = "";
+                string qbid = GetQBIDFromResponse(response);
+                if (qbid != "")
+                {
+                    tbResults.AppendText(qbid);
+                }
+                else
+                {
+                    tbResults.AppendText("Not found!");
+                }
+
+                //Site site = GetSiteFromResponse(response);
+                //AppendSiteDetails(tbResults, site);
+
+                //tbResults.AppendText(Environment.NewLine);
+
+                //ShipTo shipTo = GetShipToFromResponse(response);
+                //AppendShipToDetails(tbResults, shipTo);
+            }
+            catch (Exception ex)
+            {
+                tbResults.Text = ex.Message;
+            }
         }
 
         private void btnQueryCustomerSite_Click(object sender, EventArgs e)
@@ -483,6 +554,46 @@ namespace CustomerAdd
             return customers;
         }
 
+        private string GetQBIDFromResponse(string response)
+        {
+            string qbid = "";
+
+            //Parse the response XML string into an XmlDocument
+            XmlDocument responseXmlDoc = new XmlDocument();
+            responseXmlDoc.LoadXml(response);
+
+            //Get the response for our request
+            XmlNodeList CustomerQueryRsList = responseXmlDoc.GetElementsByTagName("CustomerQueryRs");
+            if (CustomerQueryRsList.Count == 1) //Should always be true since we only did one request in this sample
+            {
+                XmlNode responseNode = CustomerQueryRsList.Item(0);
+                //Check the status code, info, and severity
+                XmlAttributeCollection rsAttributes = responseNode.Attributes;
+                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
+                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                //status code = 0 all OK, > 0 is warning
+                if (Convert.ToInt32(statusCode) >= 0)
+                {
+                    XmlNodeList CustomerRetList = responseNode.SelectNodes("//CustomerRet");//XPath Query
+                    if (CustomerRetList.Count == 1)
+                    {
+                        XmlNode CustomerRet = CustomerRetList.Item(0);
+                        qbid = GetQBIDFromCustomerRet(CustomerRet);
+                    }
+                }
+            }
+
+            return qbid;
+        }
+
+        private string GetQBIDFromCustomerRet(XmlNode CustomerRet)
+        {
+            string ListID = CustomerRet.SelectSingleNode("./ListID").InnerText;
+            return ListID;
+        }
+
         private Site GetSiteFromResponse(string response)
         {
             Site site = new Site();
@@ -659,6 +770,29 @@ namespace CustomerAdd
             custAddRq.SetAttribute("requestID", "1");
 
             custAddRq.AppendChild(MakeSimpleElem(doc, "ListID", listID));
+            custAddRq.AppendChild(MakeSimpleElem(doc, "OwnerID", "0"));
+
+            return doc;
+        }
+
+        private XmlDocument BuildCustomerQueryByWorkorderNum (string woNum)
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.AppendChild(doc.CreateXmlDeclaration("1.0", null, null));
+            doc.AppendChild(doc.CreateProcessingInstruction("qbxml", "version=\"12.0\""));
+            XmlElement qbXML = doc.CreateElement("QBXML");
+            doc.AppendChild(qbXML);
+            XmlElement qbXMLMsgsRq = doc.CreateElement("QBXMLMsgsRq");
+            qbXML.AppendChild(qbXMLMsgsRq);
+            qbXMLMsgsRq.SetAttribute("onError", "stopOnError");
+            XmlElement custAddRq = doc.CreateElement("CustomerQueryRq");
+            qbXMLMsgsRq.AppendChild(custAddRq);
+            custAddRq.SetAttribute("requestID", "1");
+                        
+            XmlElement NameFilter = doc.CreateElement("NameFilter");
+            custAddRq.AppendChild(NameFilter);            
+            NameFilter.AppendChild(MakeSimpleElem(doc, "MatchCriterion", "Contains"));
+            NameFilter.AppendChild(MakeSimpleElem(doc, "Name", woNum));            
             custAddRq.AppendChild(MakeSimpleElem(doc, "OwnerID", "0"));
 
             return doc;
