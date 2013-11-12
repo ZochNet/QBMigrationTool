@@ -47,6 +47,9 @@ namespace CustomerAdd
         private Button btnGetQBListID;
         private TextBox tbWorkOrderNumber;
         private Label label2;
+        private Button btnRunXml;
+        private TextBox tbXML;
+        private Label label4;
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
@@ -98,6 +101,9 @@ namespace CustomerAdd
             this.btnGetQBListID = new System.Windows.Forms.Button();
             this.tbWorkOrderNumber = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
+            this.btnRunXml = new System.Windows.Forms.Button();
+            this.tbXML = new System.Windows.Forms.TextBox();
+            this.label4 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // label3
@@ -208,10 +214,39 @@ namespace CustomerAdd
             this.label2.TabIndex = 21;
             this.label2.Text = "WO #";
             // 
+            // btnRunXml
+            // 
+            this.btnRunXml.Location = new System.Drawing.Point(324, 77);
+            this.btnRunXml.Name = "btnRunXml";
+            this.btnRunXml.Size = new System.Drawing.Size(75, 23);
+            this.btnRunXml.TabIndex = 22;
+            this.btnRunXml.Text = "Run XML";
+            this.btnRunXml.UseVisualStyleBackColor = true;
+            this.btnRunXml.Click += new System.EventHandler(this.btnRunXml_Click);
+            // 
+            // tbXML
+            // 
+            this.tbXML.Location = new System.Drawing.Point(80, 79);
+            this.tbXML.Name = "tbXML";
+            this.tbXML.Size = new System.Drawing.Size(238, 20);
+            this.tbXML.TabIndex = 23;
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(15, 79);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(44, 13);
+            this.label4.TabIndex = 24;
+            this.label4.Text = "QBXML";
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(801, 794);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.tbXML);
+            this.Controls.Add(this.btnRunXml);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.tbWorkOrderNumber);
             this.Controls.Add(this.btnGetQBListID);
@@ -270,15 +305,7 @@ namespace CustomerAdd
                 else
                 {
                     tbResults.AppendText("Not found!");
-                }
-
-                //Site site = GetSiteFromResponse(response);
-                //AppendSiteDetails(tbResults, site);
-
-                //tbResults.AppendText(Environment.NewLine);
-
-                //ShipTo shipTo = GetShipToFromResponse(response);
-                //AppendShipToDetails(tbResults, shipTo);
+                }              
             }
             catch (Exception ex)
             {
@@ -387,6 +414,26 @@ namespace CustomerAdd
                 tbResults.AppendText(ex.Message);
                 tbResults.Select(tbResults.Text.Length, 0);
                 tbResults.ScrollToCaret();
+            }
+        }
+
+        // <?xml version="1.0"?><?qbxml version="12.0"?><QBXML><QBXMLMsgsRq onError="stopOnError"><CustomerQueryRq requestID="1"><ActiveStatus>All</ActiveStatus><FromModifiedDate>2013-11-09T15:08:14</FromModifiedDate><OwnerID>0</OwnerID></CustomerQueryRq></QBXMLMsgsRq></QBXML>
+        private void btnRunXml_Click(object sender, EventArgs e)
+        {
+            String rawXML = tbXML.Text.Trim();
+            if (rawXML.Length == 0)
+            {
+                MessageBox.Show("Please enter QBXML.", "Input Validation");
+                return;
+            }
+            try
+            {
+                string response = DoRequestRaw(rawXML);
+                tbResults.Text = response;
+            }
+            catch (Exception ex)
+            {
+                tbResults.Text = ex.Message;
             }
         }
 
@@ -830,6 +877,37 @@ namespace CustomerAdd
                 rp.OpenConnection("QBMT1", "QBMigrationTool");
                 ticket = rp.BeginSession("", QBFileMode.qbFileOpenDoNotCare);
                 response = rp.ProcessRequest(ticket, doc.OuterXml);
+                return response;
+            }
+            catch (System.Runtime.InteropServices.COMException ex)
+            {
+                MessageBox.Show("COM Error Description = " + ex.Message, "COM error");
+                return ex.Message;
+            }
+            finally
+            {
+                if (ticket != null)
+                {
+                    rp.EndSession(ticket);
+                }
+                if (rp != null)
+                {
+                    rp.CloseConnection();
+                }
+            }
+        }
+
+        private string DoRequestRaw(string rawXML)
+        {
+            RequestProcessor2 rp = null;
+            string ticket = null;
+            string response = null;
+            try
+            {
+                rp = new RequestProcessor2();
+                rp.OpenConnection("QBMT1", "QBMigrationTool");
+                ticket = rp.BeginSession("", QBFileMode.qbFileOpenDoNotCare);
+                response = rp.ProcessRequest(ticket, rawXML);
                 return response;
             }
             catch (System.Runtime.InteropServices.COMException ex)
