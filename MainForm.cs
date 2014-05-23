@@ -15,8 +15,6 @@
  *
  *----------------------------------------------------------
  */ 
-
-
 using System;
 using System.Drawing;
 using System.Collections;
@@ -26,8 +24,11 @@ using System.Data;
 using System.Xml;
 using Interop.QBXMLRP2;
 using System.Collections.Generic;
+using rototrack_data_access;
+using rototrack_model;
+using System.Linq;
 
-namespace CustomerAdd
+namespace QBMigrationTool
 {
 	/// <summary>
 	/// CustomerAddForm shows how to invoke QuickBooks qbXMLRP COM object
@@ -50,6 +51,10 @@ namespace CustomerAdd
         private Button btnRunXml;
         private TextBox tbXML;
         private Label label4;
+        private Button showItems;
+        private Button button1;
+        private Button btnSyncBillLines;
+        private Label labelBuildType;
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
@@ -65,6 +70,7 @@ namespace CustomerAdd
 			//
 			// TODO: Add any constructor code after InitializeComponent call
 			//
+            labelBuildType.Text = RototrackConfig.GetBuildType();
 		}
 
 		/// <summary>
@@ -104,13 +110,17 @@ namespace CustomerAdd
             this.btnRunXml = new System.Windows.Forms.Button();
             this.tbXML = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
+            this.showItems = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.btnSyncBillLines = new System.Windows.Forms.Button();
+            this.labelBuildType = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // label3
             // 
-            this.label3.Location = new System.Drawing.Point(12, 131);
+            this.label3.Location = new System.Drawing.Point(12, 173);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(333, 17);
+            this.label3.Size = new System.Drawing.Size(317, 17);
             this.label3.TabIndex = 13;
             this.label3.Text = "Note: You need to have QuickBooks with a company file opened.";
             // 
@@ -141,9 +151,9 @@ namespace CustomerAdd
             // 
             // btnSyncAllActiveMissingSiteDataOnly
             // 
-            this.btnSyncAllActiveMissingSiteDataOnly.Location = new System.Drawing.Point(455, 122);
+            this.btnSyncAllActiveMissingSiteDataOnly.Location = new System.Drawing.Point(486, 164);
             this.btnSyncAllActiveMissingSiteDataOnly.Name = "btnSyncAllActiveMissingSiteDataOnly";
-            this.btnSyncAllActiveMissingSiteDataOnly.Size = new System.Drawing.Size(230, 23);
+            this.btnSyncAllActiveMissingSiteDataOnly.Size = new System.Drawing.Size(199, 23);
             this.btnSyncAllActiveMissingSiteDataOnly.TabIndex = 14;
             this.btnSyncAllActiveMissingSiteDataOnly.Text = "Sync All Active Missing Site Data Only";
             this.btnSyncAllActiveMissingSiteDataOnly.UseVisualStyleBackColor = true;
@@ -151,11 +161,11 @@ namespace CustomerAdd
             // 
             // tbResults
             // 
-            this.tbResults.Location = new System.Drawing.Point(15, 151);
+            this.tbResults.Location = new System.Drawing.Point(15, 193);
             this.tbResults.Multiline = true;
             this.tbResults.Name = "tbResults";
             this.tbResults.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.tbResults.Size = new System.Drawing.Size(774, 631);
+            this.tbResults.Size = new System.Drawing.Size(774, 589);
             this.tbResults.TabIndex = 15;
             // 
             // btnQueryCustomer
@@ -180,7 +190,7 @@ namespace CustomerAdd
             // 
             // btnSyncAllActive
             // 
-            this.btnSyncAllActive.Location = new System.Drawing.Point(691, 122);
+            this.btnSyncAllActive.Location = new System.Drawing.Point(691, 164);
             this.btnSyncAllActive.Name = "btnSyncAllActive";
             this.btnSyncAllActive.Size = new System.Drawing.Size(98, 23);
             this.btnSyncAllActive.TabIndex = 18;
@@ -192,9 +202,9 @@ namespace CustomerAdd
             // 
             this.btnGetQBListID.Location = new System.Drawing.Point(324, 47);
             this.btnGetQBListID.Name = "btnGetQBListID";
-            this.btnGetQBListID.Size = new System.Drawing.Size(89, 23);
+            this.btnGetQBListID.Size = new System.Drawing.Size(186, 23);
             this.btnGetQBListID.TabIndex = 19;
-            this.btnGetQBListID.Text = "Get QBListID";
+            this.btnGetQBListID.Text = "Get QBListID And EditSeq";
             this.btnGetQBListID.UseVisualStyleBackColor = true;
             this.btnGetQBListID.Click += new System.EventHandler(this.btnGetQBListID_Click);
             // 
@@ -240,10 +250,52 @@ namespace CustomerAdd
             this.label4.TabIndex = 24;
             this.label4.Text = "QBXML";
             // 
+            // showItems
+            // 
+            this.showItems.Location = new System.Drawing.Point(324, 164);
+            this.showItems.Name = "showItems";
+            this.showItems.Size = new System.Drawing.Size(75, 23);
+            this.showItems.TabIndex = 25;
+            this.showItems.Text = "Show Items";
+            this.showItems.UseVisualStyleBackColor = true;
+            this.showItems.Click += new System.EventHandler(this.ShowItems_Click);
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(405, 164);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 26;
+            this.button1.Text = "Show UOMs";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.btnShowUOM_Click);
+            // 
+            // btnSyncBillLines
+            // 
+            this.btnSyncBillLines.Location = new System.Drawing.Point(18, 105);
+            this.btnSyncBillLines.Name = "btnSyncBillLines";
+            this.btnSyncBillLines.Size = new System.Drawing.Size(102, 23);
+            this.btnSyncBillLines.TabIndex = 28;
+            this.btnSyncBillLines.Text = "Sync Bill Lines";
+            this.btnSyncBillLines.UseVisualStyleBackColor = true;
+            this.btnSyncBillLines.Click += new System.EventHandler(this.btnSyncBillLines_Click);
+            // 
+            // labelBuildType
+            // 
+            this.labelBuildType.AutoSize = true;
+            this.labelBuildType.Location = new System.Drawing.Point(669, 47);
+            this.labelBuildType.Name = "labelBuildType";
+            this.labelBuildType.Size = new System.Drawing.Size(0, 13);
+            this.labelBuildType.TabIndex = 29;
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(801, 794);
+            this.Controls.Add(this.labelBuildType);
+            this.Controls.Add(this.btnSyncBillLines);
+            this.Controls.Add(this.button1);
+            this.Controls.Add(this.showItems);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.tbXML);
             this.Controls.Add(this.btnRunXml);
@@ -278,13 +330,6 @@ namespace CustomerAdd
 
 		}
 
-        private XmlElement MakeSimpleElem(XmlDocument doc, string tagName, string tagVal)
-        {
-            XmlElement elem = doc.CreateElement(tagName);
-            elem.InnerText = tagVal;
-            return elem;
-        }
-
         private void btnGetQBListID_Click(object sender, EventArgs e)
         {
             String woNum = tbWorkOrderNumber.Text.Trim();
@@ -295,7 +340,7 @@ namespace CustomerAdd
             }
             try
             {
-                string response = DoRequest(BuildCustomerQueryByWorkorderNum(woNum));
+                string response = QBUtils.DoRequest(BuildCustomerQueryByWorkorderNum(woNum));
                 tbResults.Text = "";
                 string qbid = GetQBIDFromResponse(response);
                 if (qbid != "")
@@ -305,7 +350,15 @@ namespace CustomerAdd
                 else
                 {
                     tbResults.AppendText("Not found!");
-                }              
+                }
+
+                tbResults.AppendText(Environment.NewLine);
+
+                string qbes = GetQBEditSequenceFromResponse(response);
+                if (qbes != "")
+                {
+                    tbResults.AppendText(qbes);
+                }
             }
             catch (Exception ex)
             {
@@ -323,7 +376,7 @@ namespace CustomerAdd
             }
             try
             {
-                string response = DoRequest(BuildCustomerQuery(listID));
+                string response = QBUtils.DoRequest(BuildCustomerQuery(listID));
 
                 tbResults.Text = "";
 
@@ -351,9 +404,9 @@ namespace CustomerAdd
             }
             try
             {
-                string response = DoRequest(BuildCustomerQuery(listID));
+                string response = QBUtils.DoRequest(BuildCustomerQuery(listID));
                 ShipTo shipTo = GetShipToFromResponse(response);
-                response = DoRequest(BuildSyncShipToToCustomSiteQuery(listID, shipTo));
+                response = QBUtils.DoRequest(BuildSyncShipToToCustomSiteQuery(listID, shipTo));
                 tbResults.Text = "Done";
             }
             catch (Exception ex)
@@ -378,7 +431,7 @@ namespace CustomerAdd
 
             try
             {
-                string response = DoRequest(BuildCustomerQueryAllActive());
+                string response = QBUtils.DoRequest(BuildCustomerQueryAllActive());
                 List<Customer> activeCustomers = GetActiveCustomersFromResponse(response);
                 int count = activeCustomers.Count;
                 int current = 1;
@@ -393,8 +446,8 @@ namespace CustomerAdd
                             tbResults.AppendText(customer.Name);                            
                             tbResults.AppendText (" (" + current.ToString() + " of " + count.ToString() + ")");
                             tbResults.AppendText(Environment.NewLine);
-                    
-                            response = DoRequest(BuildSyncShipToToCustomSiteQuery(customer.ListID, customer.ShipTo));                  
+
+                            response = QBUtils.DoRequest(BuildSyncShipToToCustomSiteQuery(customer.ListID, customer.ShipTo));                  
                                                         
                             tbResults.Select(tbResults.Text.Length, 0);
                             tbResults.ScrollToCaret();
@@ -428,13 +481,155 @@ namespace CustomerAdd
             }
             try
             {
-                string response = DoRequestRaw(rawXML);
+                string response = QBUtils.DoRequestRaw(rawXML);
                 tbResults.Text = response;
             }
             catch (Exception ex)
             {
                 tbResults.Text = ex.Message;
             }
+        }
+
+        private void ShowItems_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string response = QBUtils.DoRequest(BuildAllItemsQuery());
+                WalkItemQueryRs(response);
+            }
+            catch (Exception ex)
+            {
+                tbResults.Text = ex.Message;
+            }
+        }
+
+        private void btnShowUOM_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                string response = QBUtils.DoRequest(BuildAllUOMsQuery());
+                WalkUnitOfMeasureSetQueryRs(response);
+            }
+            catch (Exception ex)
+            {
+                tbResults.Text = ex.Message;
+            }
+        }
+
+        void WalkUnitOfMeasureSetQueryRs(string response)
+        {
+            //Parse the response XML string into an XmlDocument
+            XmlDocument responseXmlDoc = new XmlDocument();
+            responseXmlDoc.LoadXml(response);
+
+            //Get the response for our request
+            XmlNodeList UnitOfMeasureSetQueryRsList = responseXmlDoc.GetElementsByTagName("UnitOfMeasureSetQueryRs");
+            if (UnitOfMeasureSetQueryRsList.Count == 1) //Should always be true since we only did one request in this sample
+            {
+                XmlNode responseNode = UnitOfMeasureSetQueryRsList.Item(0);
+                //Check the status code, info, and severity
+                XmlAttributeCollection rsAttributes = responseNode.Attributes;
+                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
+                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                //status code = 0 all OK, > 0 is warning
+                if (Convert.ToInt32(statusCode) >= 0)
+                {
+                    XmlNodeList UnitOfMeasureSetRetList = responseNode.SelectNodes("//UnitOfMeasureSetRet");//XPath Query
+                    for (int i = 0; i < UnitOfMeasureSetRetList.Count; i++)
+                    {
+                        XmlNode UnitOfMeasureSetRet = UnitOfMeasureSetRetList.Item(i);
+                        WalkUnitOfMeasureSetRet(UnitOfMeasureSetRet);
+                    }
+                }
+            }
+        }
+
+        void WalkUnitOfMeasureSetRet(XmlNode UnitOfMeasureSetRet)
+        {
+            if (UnitOfMeasureSetRet == null) return;
+
+            //Go through all the elements of UnitOfMeasureSetRet
+            //Get value of ListID
+            if (UnitOfMeasureSetRet.SelectSingleNode("./ListID") != null)
+            {
+                string ListID = UnitOfMeasureSetRet.SelectSingleNode("./ListID").InnerText;
+                tbResults.AppendText(ListID+",");
+            }
+            //Get value of TimeCreated
+            if (UnitOfMeasureSetRet.SelectSingleNode("./TimeCreated") != null)
+            {
+                string TimeCreated = UnitOfMeasureSetRet.SelectSingleNode("./TimeCreated").InnerText;
+            }
+            //Get value of TimeModified
+            if (UnitOfMeasureSetRet.SelectSingleNode("./TimeModified") != null)
+            {
+                string TimeModified = UnitOfMeasureSetRet.SelectSingleNode("./TimeModified").InnerText;
+            }
+            //Get value of EditSequence
+            if (UnitOfMeasureSetRet.SelectSingleNode("./EditSequence") != null)
+            {
+                string EditSequence = UnitOfMeasureSetRet.SelectSingleNode("./EditSequence").InnerText;
+            }
+            //Get value of Name
+            if (UnitOfMeasureSetRet.SelectSingleNode("./Name") != null)
+            {
+                string Name = UnitOfMeasureSetRet.SelectSingleNode("./Name").InnerText;
+                tbResults.AppendText(Name);
+                tbResults.AppendText(Environment.NewLine);
+            }
+            //Get value of IsActive
+            if (UnitOfMeasureSetRet.SelectSingleNode("./IsActive") != null)
+            {
+                string IsActive = UnitOfMeasureSetRet.SelectSingleNode("./IsActive").InnerText;
+            }
+            //Get value of UnitOfMeasureType
+            if (UnitOfMeasureSetRet.SelectSingleNode("./UnitOfMeasureType") != null)
+            {
+                string UnitOfMeasureType = UnitOfMeasureSetRet.SelectSingleNode("./UnitOfMeasureType").InnerText;
+            }
+            //Get all field values for BaseUnit aggregate
+            XmlNode BaseUnit = UnitOfMeasureSetRet.SelectSingleNode("./BaseUnit");
+            if (BaseUnit != null)
+            {
+                //Get value of Name
+                string Name = UnitOfMeasureSetRet.SelectSingleNode("./BaseUnit/Name").InnerText;
+                //Get value of Abbreviation
+                string Abbreviation = UnitOfMeasureSetRet.SelectSingleNode("./BaseUnit/Abbreviation").InnerText;
+            }
+            //Done with field values for BaseUnit aggregate
+
+            //Walk list of RelatedUnit aggregates
+            XmlNodeList RelatedUnitList = UnitOfMeasureSetRet.SelectNodes("./RelatedUnit");
+            if (RelatedUnitList != null)
+            {
+                for (int i = 0; i < RelatedUnitList.Count; i++)
+                {
+                    XmlNode RelatedUnit = RelatedUnitList.Item(i);
+                    //Get value of Name
+                    string Name = RelatedUnit.SelectSingleNode("./Name").InnerText;
+                    //Get value of Abbreviation
+                    string Abbreviation = RelatedUnit.SelectSingleNode("./Abbreviation").InnerText;
+                    //Get value of ConversionRatio
+                    string ConversionRatio = RelatedUnit.SelectSingleNode("./ConversionRatio").InnerText;
+                }
+            }
+
+            //Walk list of DefaultUnit aggregates
+            XmlNodeList DefaultUnitList = UnitOfMeasureSetRet.SelectNodes("./DefaultUnit");
+            if (DefaultUnitList != null)
+            {
+                for (int i = 0; i < DefaultUnitList.Count; i++)
+                {
+                    XmlNode DefaultUnit = DefaultUnitList.Item(i);
+                    //Get value of UnitUsedFor
+                    string UnitUsedFor = DefaultUnit.SelectSingleNode("./UnitUsedFor").InnerText;
+                    //Get value of Unit
+                    string Unit = DefaultUnit.SelectSingleNode("./Unit").InnerText;
+                }
+            }
+
         }
 
         private void AppendSiteDetails(TextBox tb, Site site)
@@ -635,9 +830,50 @@ namespace CustomerAdd
             return qbid;
         }
 
+
+        private string GetQBEditSequenceFromResponse(string response)
+        {
+            string qbes = "";
+
+            //Parse the response XML string into an XmlDocument
+            XmlDocument responseXmlDoc = new XmlDocument();
+            responseXmlDoc.LoadXml(response);
+
+            //Get the response for our request
+            XmlNodeList CustomerQueryRsList = responseXmlDoc.GetElementsByTagName("CustomerQueryRs");
+            if (CustomerQueryRsList.Count == 1) //Should always be true since we only did one request in this sample
+            {
+                XmlNode responseNode = CustomerQueryRsList.Item(0);
+                //Check the status code, info, and severity
+                XmlAttributeCollection rsAttributes = responseNode.Attributes;
+                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
+                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                //status code = 0 all OK, > 0 is warning
+                if (Convert.ToInt32(statusCode) >= 0)
+                {
+                    XmlNodeList CustomerRetList = responseNode.SelectNodes("//CustomerRet");//XPath Query
+                    if (CustomerRetList.Count == 1)
+                    {
+                        XmlNode CustomerRet = CustomerRetList.Item(0);
+                        qbes = GetQBEditSequenceFromCustomerRet(CustomerRet);
+                    }
+                }
+            }
+
+            return qbes;
+        }
+
         private string GetQBIDFromCustomerRet(XmlNode CustomerRet)
         {
             string ListID = CustomerRet.SelectSingleNode("./ListID").InnerText;
+            return ListID;
+        }
+        
+        private string GetQBEditSequenceFromCustomerRet(XmlNode CustomerRet)
+        {
+            string ListID = CustomerRet.SelectSingleNode("./EditSequence").InnerText;
             return ListID;
         }
 
@@ -760,22 +996,99 @@ namespace CustomerAdd
             return shipTo;
         }
 
-        private XmlDocument BuildDataExtModRq(XmlDocument doc, XmlElement parent, string customerListID, string DataExtName, string DataExtValue)
+        void WalkItemQueryRs(string response)
+        {
+            //Parse the response XML string into an XmlDocument
+            XmlDocument responseXmlDoc = new XmlDocument();
+            responseXmlDoc.LoadXml(response);
+
+            //Get the response for our request
+            XmlNodeList ItemQueryRsList = responseXmlDoc.GetElementsByTagName("ItemQueryRs");
+            if (ItemQueryRsList.Count == 1) //Should always be true since we only did one request in this sample
+            {
+                XmlNode responseNode = ItemQueryRsList.Item(0);
+                //Check the status code, info, and severity
+                XmlAttributeCollection rsAttributes = responseNode.Attributes;
+                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
+                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                //status code = 0 all OK, > 0 is warning
+                if (Convert.ToInt32(statusCode) >= 0)
+                {
+                    XmlNodeList ItemServiceRetList = responseNode.SelectNodes("//ItemServiceRet");//XPath Query
+                    for (int i = 0; i < ItemServiceRetList.Count; i++)
+                    {
+                        XmlNode ItemServiceRet = ItemServiceRetList.Item(i);
+                        WalkItemServiceRet(ItemServiceRet);
+                    }
+                }
+            }
+
+        }
+
+        void WalkItemServiceRet(XmlNode ItemServiceRet)
+        {
+            if (ItemServiceRet == null) return;
+
+            //Get value of ListID
+            string ListID = ItemServiceRet.SelectSingleNode("./ListID").InnerText;
+            tbResults.AppendText(ListID);
+            tbResults.AppendText(",");
+            //Get value of TimeCreated
+            string TimeCreated = ItemServiceRet.SelectSingleNode("./TimeCreated").InnerText;
+            //Get value of TimeModified
+            string TimeModified = ItemServiceRet.SelectSingleNode("./TimeModified").InnerText;
+            //Get value of EditSequence
+            string EditSequence = ItemServiceRet.SelectSingleNode("./EditSequence").InnerText;
+            //Get value of Name
+            string Name = ItemServiceRet.SelectSingleNode("./Name").InnerText;
+            //Get value of FullName
+            string FullName = ItemServiceRet.SelectSingleNode("./FullName").InnerText;
+            tbResults.AppendText(FullName);
+            tbResults.AppendText(",");
+
+            XmlNode UnitOfMeasureSetRef = ItemServiceRet.SelectSingleNode("./UnitOfMeasureSetRef");
+            if (UnitOfMeasureSetRef != null)
+            {
+                //Get value of ListID
+                if (ItemServiceRet.SelectSingleNode("./UnitOfMeasureSetRef/ListID") != null)
+                {
+                    string UOMListID = ItemServiceRet.SelectSingleNode("./UnitOfMeasureSetRef/ListID").InnerText;
+                    tbResults.AppendText(UOMListID);
+                    tbResults.AppendText(",");
+                }
+                //Get value of FullName
+                if (ItemServiceRet.SelectSingleNode("./UnitOfMeasureSetRef/FullName") != null)
+                {
+                    string UOMFullName = ItemServiceRet.SelectSingleNode("./UnitOfMeasureSetRef/FullName").InnerText;
+                    tbResults.AppendText(UOMFullName);
+                    tbResults.AppendText(Environment.NewLine);
+                }
+            }
+            else
+            {
+                tbResults.AppendText(Environment.NewLine);
+            }
+
+        }
+
+        public XmlDocument BuildDataExtModRq(XmlDocument doc, XmlElement parent, string customerListID, string DataExtName, string DataExtValue)
         {
             XmlElement DataExtModRq = doc.CreateElement("DataExtModRq");
             parent.AppendChild(DataExtModRq);
             DataExtModRq.SetAttribute("requestID", "1");
 
             XmlElement DataExtMod = doc.CreateElement("DataExtMod");
-            DataExtModRq.AppendChild(DataExtMod);
-            DataExtMod.AppendChild(MakeSimpleElem(doc, "OwnerID", "0"));
-            DataExtMod.AppendChild(MakeSimpleElem(doc, "DataExtName", DataExtName));
-            DataExtMod.AppendChild(MakeSimpleElem(doc, "ListDataExtType", "Customer"));
+            DataExtModRq.AppendChild(DataExtMod);            
+            DataExtMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "OwnerID", "0"));
+            DataExtMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "DataExtName", DataExtName));
+            DataExtMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListDataExtType", "Customer"));
 
             XmlElement ListObjRef = doc.CreateElement("ListObjRef");
             DataExtMod.AppendChild(ListObjRef);
-            ListObjRef.AppendChild(MakeSimpleElem(doc, "ListID", customerListID));
-            DataExtMod.AppendChild(MakeSimpleElem(doc, "DataExtValue", DataExtValue));
+            ListObjRef.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", customerListID));
+            DataExtMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "DataExtValue", DataExtValue));
 
             return doc;
         }
@@ -816,8 +1129,50 @@ namespace CustomerAdd
             qbXMLMsgsRq.AppendChild(custAddRq);
             custAddRq.SetAttribute("requestID", "1");
 
-            custAddRq.AppendChild(MakeSimpleElem(doc, "ListID", listID));
-            custAddRq.AppendChild(MakeSimpleElem(doc, "OwnerID", "0"));
+            custAddRq.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", listID));
+            custAddRq.AppendChild(XmlUtils.MakeSimpleElem(doc, "OwnerID", "0"));
+
+            return doc;
+        }
+
+        private XmlDocument BuildAllUOMsQuery()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.AppendChild(doc.CreateXmlDeclaration("1.0", null, null));
+            doc.AppendChild(doc.CreateProcessingInstruction("qbxml", "version=\"12.0\""));
+            XmlElement qbXML = doc.CreateElement("QBXML");
+            doc.AppendChild(qbXML);
+            XmlElement qbXMLMsgsRq = doc.CreateElement("QBXMLMsgsRq");
+            qbXML.AppendChild(qbXMLMsgsRq);
+            qbXMLMsgsRq.SetAttribute("onError", "stopOnError");
+
+            XmlElement custAddRq = doc.CreateElement("UnitOfMeasureSetQueryRq");
+            qbXMLMsgsRq.AppendChild(custAddRq);
+            //custAddRq.SetAttribute("requestID", "1");
+
+            custAddRq.AppendChild(XmlUtils.MakeSimpleElem(doc, "ActiveStatus", "ActiveOnly"));
+            //custAddRq.AppendChild(MakeSimpleElem(doc, "OwnerID", "0"));
+
+            return doc;
+        }
+        
+        private XmlDocument BuildAllItemsQuery()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.AppendChild(doc.CreateXmlDeclaration("1.0", null, null));
+            doc.AppendChild(doc.CreateProcessingInstruction("qbxml", "version=\"12.0\""));
+            XmlElement qbXML = doc.CreateElement("QBXML");
+            doc.AppendChild(qbXML);
+            XmlElement qbXMLMsgsRq = doc.CreateElement("QBXMLMsgsRq");
+            qbXML.AppendChild(qbXMLMsgsRq);
+            qbXMLMsgsRq.SetAttribute("onError", "stopOnError");
+
+            XmlElement custAddRq = doc.CreateElement("ItemQueryRq");
+            qbXMLMsgsRq.AppendChild(custAddRq);
+            //custAddRq.SetAttribute("requestID", "1");
+
+            custAddRq.AppendChild(XmlUtils.MakeSimpleElem(doc, "ActiveStatus", "ActiveOnly"));
+            //custAddRq.AppendChild(MakeSimpleElem(doc, "OwnerID", "0"));
 
             return doc;
         }
@@ -837,10 +1192,10 @@ namespace CustomerAdd
             custAddRq.SetAttribute("requestID", "1");
                         
             XmlElement NameFilter = doc.CreateElement("NameFilter");
-            custAddRq.AppendChild(NameFilter);            
-            NameFilter.AppendChild(MakeSimpleElem(doc, "MatchCriterion", "Contains"));
-            NameFilter.AppendChild(MakeSimpleElem(doc, "Name", woNum));            
-            custAddRq.AppendChild(MakeSimpleElem(doc, "OwnerID", "0"));
+            custAddRq.AppendChild(NameFilter);
+            NameFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "MatchCriterion", "Contains"));
+            NameFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "Name", woNum));
+            custAddRq.AppendChild(XmlUtils.MakeSimpleElem(doc, "OwnerID", "0"));
 
             return doc;
         }
@@ -860,72 +1215,51 @@ namespace CustomerAdd
             custAddRq.SetAttribute("requestID", "1");
 
             //custAddRq.AppendChild(MakeSimpleElem(doc, "MaxReturned", "3"));
-            custAddRq.AppendChild(MakeSimpleElem(doc, "ActiveStatus", "ActiveOnly"));
-            custAddRq.AppendChild(MakeSimpleElem(doc, "OwnerID", "0"));
+            custAddRq.AppendChild(XmlUtils.MakeSimpleElem(doc, "ActiveStatus", "ActiveOnly"));
+            custAddRq.AppendChild(XmlUtils.MakeSimpleElem(doc, "OwnerID", "0"));
             
             return doc;
         }
-
-        private string DoRequest(XmlDocument doc)
-        {         
-            RequestProcessor2 rp = null;
-            string ticket = null;
-            string response = null;
-            try
-            {
-                rp = new RequestProcessor2();
-                rp.OpenConnection("QBMT1", "QBMigrationTool");
-                ticket = rp.BeginSession("", QBFileMode.qbFileOpenDoNotCare);
-                response = rp.ProcessRequest(ticket, doc.OuterXml);
-                return response;
-            }
-            catch (System.Runtime.InteropServices.COMException ex)
-            {
-                MessageBox.Show("COM Error Description = " + ex.Message, "COM error");
-                return ex.Message;
-            }
-            finally
-            {
-                if (ticket != null)
-                {
-                    rp.EndSession(ticket);
-                }
-                if (rp != null)
-                {
-                    rp.CloseConnection();
-                }
-            }
-        }
-
-        private string DoRequestRaw(string rawXML)
+               
+        private void btnSyncBillLines_Click(object sender, EventArgs e)
         {
-            RequestProcessor2 rp = null;
-            string ticket = null;
-            string response = null;
-            try
-            {
-                rp = new RequestProcessor2();
-                rp.OpenConnection("QBMT1", "QBMigrationTool");
-                ticket = rp.BeginSession("", QBFileMode.qbFileOpenDoNotCare);
-                response = rp.ProcessRequest(ticket, rawXML);
-                return response;
-            }
-            catch (System.Runtime.InteropServices.COMException ex)
-            {
-                MessageBox.Show("COM Error Description = " + ex.Message, "COM error");
-                return ex.Message;
-            }
-            finally
-            {
-                if (ticket != null)
-                {
-                    rp.EndSession(ticket);
-                }
-                if (rp != null)
-                {
-                    rp.CloseConnection();
-                }
-            }
-        }
+            string response = "";
+            string fromModifiedDate = AppConfig.GetLastSyncTime();
+
+            tbResults.Text = "";
+                        
+            
+            tbResults.AppendText("Query Bills...");
+            tbResults.AppendText(Environment.NewLine);
+            //response = DoRequest(BillDAL.BuildBillQueryRequest(GetAdjustedDateAsQBString(fromModifiedDate, -1, false), GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            response = QBUtils.DoRequest(BillDAL.BuildBillQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            tbResults.AppendText("Processing Bills...");
+            tbResults.AppendText(Environment.NewLine);
+            BillDAL.HandleResponse(response);            
+                         
+            tbResults.AppendText("Query Vendors...");
+            tbResults.AppendText(Environment.NewLine);
+            response = QBUtils.DoRequest(VendorDAL.BuildVendorQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            tbResults.AppendText("Processing Vendors...");
+            tbResults.AppendText(Environment.NewLine);
+            VendorDAL.HandleResponse(response);
+                        
+            tbResults.AppendText("Query Invoices...");
+            tbResults.AppendText(Environment.NewLine);
+            response = QBUtils.DoRequest(InvoiceDAL.BuildInvoiceQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            tbResults.AppendText("Processing Invoices...");
+            tbResults.AppendText(Environment.NewLine);
+            InvoiceDAL.HandleResponse(response);            
+
+            tbResults.AppendText("Query Items...");
+            tbResults.AppendText(Environment.NewLine);
+            response = QBUtils.DoRequest(ItemDAL.BuildItemQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            tbResults.AppendText("Processing Items...");
+            tbResults.AppendText(Environment.NewLine);
+            ItemDAL.HandleResponse(response);
+
+            tbResults.AppendText("Done");
+            tbResults.AppendText(Environment.NewLine);
+        }               
 	}
 }
