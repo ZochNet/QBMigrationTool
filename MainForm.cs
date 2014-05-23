@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using rototrack_data_access;
 using rototrack_model;
 using System.Linq;
+using System.Timers;
 
 namespace QBMigrationTool
 {
@@ -36,6 +37,8 @@ namespace QBMigrationTool
 	/// </summary>
 	public class MainForm : System.Windows.Forms.Form
 	{
+        private System.Timers.Timer aTimer;
+
 		private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button Exit;
 		private System.Windows.Forms.TextBox tbQBListID;
@@ -53,7 +56,7 @@ namespace QBMigrationTool
         private Label label4;
         private Button showItems;
         private Button button1;
-        private Button btnSyncBillLines;
+        private Button btnSync;
         private Label labelBuildType;
 		/// <summary>
 		/// Required designer variable.
@@ -71,8 +74,11 @@ namespace QBMigrationTool
 			// TODO: Add any constructor code after InitializeComponent call
 			//
             labelBuildType.Text = RototrackConfig.GetBuildType();
+            //aTimer = new System.Timers.Timer(10000);
+            aTimer = new System.Timers.Timer(300000);
+            aTimer.Elapsed += aTimer_Elapsed;
 		}
-
+        
 		/// <summary>
 		/// Clean up any resources being used.
 		/// </summary>
@@ -112,15 +118,15 @@ namespace QBMigrationTool
             this.label4 = new System.Windows.Forms.Label();
             this.showItems = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
-            this.btnSyncBillLines = new System.Windows.Forms.Button();
+            this.btnSync = new System.Windows.Forms.Button();
             this.labelBuildType = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // label3
             // 
-            this.label3.Location = new System.Drawing.Point(12, 173);
+            this.label3.Location = new System.Drawing.Point(15, 164);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(317, 17);
+            this.label3.Size = new System.Drawing.Size(303, 36);
             this.label3.TabIndex = 13;
             this.label3.Text = "Note: You need to have QuickBooks with a company file opened.";
             // 
@@ -270,15 +276,15 @@ namespace QBMigrationTool
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.btnShowUOM_Click);
             // 
-            // btnSyncBillLines
+            // btnSync
             // 
-            this.btnSyncBillLines.Location = new System.Drawing.Point(18, 105);
-            this.btnSyncBillLines.Name = "btnSyncBillLines";
-            this.btnSyncBillLines.Size = new System.Drawing.Size(102, 23);
-            this.btnSyncBillLines.TabIndex = 28;
-            this.btnSyncBillLines.Text = "Sync Bill Lines";
-            this.btnSyncBillLines.UseVisualStyleBackColor = true;
-            this.btnSyncBillLines.Click += new System.EventHandler(this.btnSyncBillLines_Click);
+            this.btnSync.Location = new System.Drawing.Point(18, 105);
+            this.btnSync.Name = "btnSync";
+            this.btnSync.Size = new System.Drawing.Size(102, 23);
+            this.btnSync.TabIndex = 28;
+            this.btnSync.Text = "Enable Sync";
+            this.btnSync.UseVisualStyleBackColor = true;
+            this.btnSync.Click += new System.EventHandler(this.btnSync_Click);
             // 
             // labelBuildType
             // 
@@ -293,7 +299,7 @@ namespace QBMigrationTool
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(801, 794);
             this.Controls.Add(this.labelBuildType);
-            this.Controls.Add(this.btnSyncBillLines);
+            this.Controls.Add(this.btnSync);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.showItems);
             this.Controls.Add(this.label4);
@@ -1220,46 +1226,93 @@ namespace QBMigrationTool
             
             return doc;
         }
-               
-        private void btnSyncBillLines_Click(object sender, EventArgs e)
+        
+        void aTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {            
+            SyncQBData();
+        }
+
+        private void btnSync_Click(object sender, EventArgs e)
+        {
+            if (aTimer.Enabled)
+            {
+                aTimer.Enabled = false;
+                btnSync.Text = "Enable Sync";
+            }
+            else
+            {
+                aTimer.Enabled = true;
+                btnSync.Text = "Disable Sync";
+                SyncQBData();
+            }            
+        }
+
+        private void ClearStatus()
+        {
+            this.Invoke((MethodInvoker)delegate
+            {
+                tbResults.Clear();
+            });
+        }
+        
+        private void SetStatus(string value)
+        {
+            this.Invoke((MethodInvoker)delegate
+            {
+                tbResults.Text = value;
+            });
+        }
+
+        private void AppendStatus(string value)
+        {
+            this.Invoke((MethodInvoker)delegate
+            {
+                tbResults.AppendText(value);
+            });
+        }
+
+        private void SyncQBData()
         {
             string response = "";
             string fromModifiedDate = AppConfig.GetLastSyncTime();
 
-            tbResults.Text = "";
-                        
-            
-            tbResults.AppendText("Query Bills...");
-            tbResults.AppendText(Environment.NewLine);
-            //response = DoRequest(BillDAL.BuildBillQueryRequest(GetAdjustedDateAsQBString(fromModifiedDate, -1, false), GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            response = QBUtils.DoRequest(BillDAL.BuildBillQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            tbResults.AppendText("Processing Bills...");
-            tbResults.AppendText(Environment.NewLine);
-            BillDAL.HandleResponse(response);            
-                         
-            tbResults.AppendText("Query Vendors...");
-            tbResults.AppendText(Environment.NewLine);
-            response = QBUtils.DoRequest(VendorDAL.BuildVendorQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            tbResults.AppendText("Processing Vendors...");
-            tbResults.AppendText(Environment.NewLine);
-            VendorDAL.HandleResponse(response);
-                        
-            tbResults.AppendText("Query Invoices...");
-            tbResults.AppendText(Environment.NewLine);
-            response = QBUtils.DoRequest(InvoiceDAL.BuildInvoiceQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            tbResults.AppendText("Processing Invoices...");
-            tbResults.AppendText(Environment.NewLine);
-            InvoiceDAL.HandleResponse(response);            
+            ClearStatus();
+            SetStatus("");
 
-            tbResults.AppendText("Query Items...");
-            tbResults.AppendText(Environment.NewLine);
-            response = QBUtils.DoRequest(ItemDAL.BuildItemQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            tbResults.AppendText("Processing Items...");
-            tbResults.AppendText(Environment.NewLine);
+            AppendStatus("Query Bills...");
+            AppendStatus(Environment.NewLine);
+            //response = DoRequest(BillDAL.BuildBillQueryRequest(GetAdjustedDateAsQBString(fromModifiedDate, -300, false), GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            response = QBUtils.DoRequest(BillDAL.BuildBillQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            AppendStatus("Processing Bills...");
+            AppendStatus(Environment.NewLine);
+            BillDAL.HandleResponse(response);
+
+            AppendStatus("Query Vendors...");
+            AppendStatus(Environment.NewLine);
+            //response = QBUtils.DoRequest(VendorDAL.BuildVendorQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            response = QBUtils.DoRequest(VendorDAL.BuildVendorQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            AppendStatus("Processing Vendors...");
+            AppendStatus(Environment.NewLine);
+            VendorDAL.HandleResponse(response);
+
+            AppendStatus("Query Invoices...");
+            AppendStatus(Environment.NewLine);
+            //response = QBUtils.DoRequest(InvoiceDAL.BuildInvoiceQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            response = QBUtils.DoRequest(InvoiceDAL.BuildInvoiceQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            AppendStatus("Processing Invoices...");
+            AppendStatus(Environment.NewLine);
+            InvoiceDAL.HandleResponse(response);
+
+            AppendStatus("Query Items...");
+            AppendStatus(Environment.NewLine);
+            //response = QBUtils.DoRequest(ItemDAL.BuildItemQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            response = QBUtils.DoRequest(ItemDAL.BuildItemQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
+            AppendStatus("Processing Items...");
+            AppendStatus(Environment.NewLine);
             ItemDAL.HandleResponse(response);
 
-            tbResults.AppendText("Done");
-            tbResults.AppendText(Environment.NewLine);
-        }               
+            AppendStatus("Done");
+            AppendStatus(Environment.NewLine);
+        }
 	}
 }
