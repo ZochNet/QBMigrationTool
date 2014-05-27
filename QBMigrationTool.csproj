@@ -149,16 +149,14 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="BillDAL.cs" />
+    <Compile Include="CustomerDAL.cs" />
     <Compile Include="ItemDAL.cs" />
     <Compile Include="InvoiceDAL.cs" />
     <Compile Include="QBUtils.cs" />
     <Compile Include="RototrackConfig.cs" />
-    <Compile Include="Customer.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="ShipTo.cs" />
-    <Compile Include="Site.cs" />
     <Compile Include="VendorDAL.cs" />
     <Compile Include="XmlUtils.cs" />
     <Content Include="App.ico" />
