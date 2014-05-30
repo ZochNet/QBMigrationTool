@@ -149,14 +149,22 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="BillDAL.cs" />
+    <Compile Include="ClassDAL.cs" />
     <Compile Include="CustomerDAL.cs" />
+    <Compile Include="CustomerTypeDAL.cs" />
+    <Compile Include="EmployeeDAL.cs" />
     <Compile Include="ItemDAL.cs" />
     <Compile Include="InvoiceDAL.cs" />
+    <Compile Include="JobTypeDAL.cs" />
     <Compile Include="QBUtils.cs" />
     <Compile Include="RototrackConfig.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="SalesOrderDAL.cs" />
+    <Compile Include="TimeTrackingDAL.cs" />
+    <Compile Include="VehicleDAL.cs" />
+    <Compile Include="VehicleMileageDAL.cs" />
     <Compile Include="VendorDAL.cs" />
     <Compile Include="XmlUtils.cs" />
     <Content Include="App.ico" />
@@ -172,6 +180,10 @@
     <ProjectReference Include="..\rototrack-model\rototrack-model.csproj">
       <Project>{6e2731d5-058c-4055-9a05-2df86eb1e400}</Project>
       <Name>rototrack-model</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\zochnet-utils\zochnet-utils.csproj">
+      <Project>{b5c4436d-1767-4d34-bda8-8cceb9a5b8db}</Project>
+      <Name>zochnet-utils</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

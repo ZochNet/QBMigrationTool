@@ -322,30 +322,73 @@ namespace QBMigrationTool
 
             ClearStatus();
             SetStatus("");
-            
-            //doc = SalesOrderDAL.BuildSalesOrderQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false));
-            //response = SyncDataHelper(doc, "Sales Orders");
-            //SalesOrderDAL.HandleResponse(response);
                         
-            //response = DoRequest(BillDAL.BuildBillQueryRequest(GetAdjustedDateAsQBString(fromModifiedDate, -300, false), GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            doc = BillDAL.BuildBillQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false));
+            string activeStatus = "All";            
+            string ownerID = "0";
+            string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false); 
+            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);            
+
+            doc = ClassDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            response = SyncDataHelper(doc, "Classes (Areas)");
+            ClassDAL.HandleResponse(response);
+            
+            doc = EmployeeDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus, ownerID);
+            response = SyncDataHelper(doc, "Employees");
+            EmployeeDAL.HandleResponse(response);
+        
+            doc = CustomerDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus, ownerID);
+            response = SyncDataHelper(doc, "Customers");
+            CustomerDAL.HandleResponse(response);
+
+            doc = CustomerTypeDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            response = SyncDataHelper(doc, "Customer Types");
+            CustomerTypeDAL.HandleResponse(response);
+
+            doc = VehicleDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            response = SyncDataHelper(doc, "Vehicles");
+            VehicleDAL.HandleResponse(response);
+
+            doc = JobTypeDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            response = SyncDataHelper(doc, "Job Types");
+            JobTypeDAL.HandleResponse(response);
+
+            doc = TimeTrackingDAL.BuildQueryRequest(fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Time Trackings");
+            TimeTrackingDAL.HandleResponse(response);
+
+            // Exception for VehicleMileage due to bug in Quickbooks where querying against modified date gets all the mileage--so have to use transaction date, back 30 days.
+            // "yyyy-MM-ddTHH:mm:ssK" or "yyyy-MM-dd" - Go from 30 days ago until a day past today
+            string fromDateOnly = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -30, true);
+            string toDateOnly = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, true);
+            doc = VehicleMileageDAL.BuildQueryRequest(fromDateOnly, toDateOnly);
+            response = SyncDataHelper(doc, "Vehicle Mileage");
+            VehicleMileageDAL.HandleResponse(response);
+
+            /*
+             * TODO TODO TODO
+             SPECIAL CASES!!!!!!!!!!!!!!!!Need to handle these in the generic item query below
+            BuildQueryRequest(req, "ItemServiceQueryRq", requestID, activeStatus, null, null, null, null);
+            BuildQueryRequest(req, "ItemOtherChargeQueryRq", requestID, activeStatus, null, null, null, null);
+            */
+            doc = ItemDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            response = SyncDataHelper(doc, "Items");
+            ItemDAL.HandleResponse(response);
+
+            doc = VendorDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            response = SyncDataHelper(doc, "Vendors");
+            VendorDAL.HandleResponse(response);
+
+            doc = BillDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
             response = SyncDataHelper(doc, "Bills");            
             BillDAL.HandleResponse(response);
-                        
-            //response = QBUtils.DoRequest(VendorDAL.BuildVendorQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            doc = VendorDAL.BuildVendorQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false));
-            response = SyncDataHelper(doc, "Vendors");            
-            VendorDAL.HandleResponse(response);
-                        
-            //response = QBUtils.DoRequest(InvoiceDAL.BuildInvoiceQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            doc = InvoiceDAL.BuildInvoiceQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false));
+
+            doc = SalesOrderDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            response = SyncDataHelper(doc, "Sales Orders");
+            SalesOrderDAL.HandleResponse(response);            
+            
+            doc = InvoiceDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
             response = SyncDataHelper(doc, "Invoices");            
-            InvoiceDAL.HandleResponse(response);
-                        
-            //response = QBUtils.DoRequest(ItemDAL.BuildItemQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            doc = ItemDAL.BuildItemQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false));
-            response = SyncDataHelper(doc, "Items");            
-            ItemDAL.HandleResponse(response);
+            InvoiceDAL.HandleResponse(response);   
 
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);

@@ -11,15 +11,16 @@ namespace QBMigrationTool
 {
     public class ItemDAL
     {
-        public static XmlDocument BuildItemQueryRequest(string fromModifiedDate, string toModifiedDate)
+        public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate, string activeStatus)
         {
             XmlDocument doc = XmlUtils.MakeRequestDocument();
             XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
             XmlElement queryElement = doc.CreateElement("ItemQueryRq");
             parent.AppendChild(queryElement);
-
+                        
             queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
             queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "ActiveStatus", activeStatus));
 
             return doc;
         }
@@ -2479,6 +2480,155 @@ namespace QBMigrationTool
             o.ItemType = ItemType;
 
             return o;
+        }
+
+        private void WalkItemServiceRet(XmlNode ItemServiceRet)
+        {
+            if (ItemServiceRet == null) return;
+
+            ServiceType st = null;
+            RotoTrackDb db = new RotoTrackDb();
+
+            string ListID = ItemServiceRet.SelectSingleNode("./ListID").InnerText;
+            if (db.ServiceTypes.Any(f => f.QBListId == ListID))
+            {
+                st = db.ServiceTypes.First(f => f.QBListId == ListID);
+            }
+            else
+            {
+                st = new ServiceType();
+                db.ServiceTypes.Add(st);
+            }
+            st.QBListId = ListID;
+
+            string Name = ItemServiceRet.SelectSingleNode("./FullName").InnerText;
+            st.Name = Name;
+
+            string IsActive = "false";
+            if (ItemServiceRet.SelectSingleNode("./IsActive") != null)
+            {
+                IsActive = ItemServiceRet.SelectSingleNode("./IsActive").InnerText;
+            }
+            st.IsActive = (IsActive == "true") ? true : false;
+
+            XmlNode UnitOfMeasureSetRef = ItemServiceRet.SelectSingleNode("./UnitOfMeasureSetRef");
+            if (UnitOfMeasureSetRef != null)
+            {
+                if (ItemServiceRet.SelectSingleNode("./UnitOfMeasureSetRef/FullName") != null)
+                {
+                    string UOMFullName = ItemServiceRet.SelectSingleNode("./UnitOfMeasureSetRef/FullName").InnerText;
+                    st.UnitOfMeasure = UOMFullName;
+                }
+            }
+
+            XmlNodeList ORSalesPurchaseChildren = ItemServiceRet.SelectNodes("./*");
+            for (int i = 0; i < ORSalesPurchaseChildren.Count; i++)
+            {
+                XmlNode Child = ORSalesPurchaseChildren.Item(i);
+
+                if (Child.Name == "SalesOrPurchase")
+                {
+                    if (Child.SelectSingleNode("./Desc") != null)
+                    {
+                        string Desc = Child.SelectSingleNode("./Desc").InnerText;
+                        st.Description = Desc;
+                    }
+                    XmlNodeList ORPriceChildren = Child.SelectNodes("./*");
+                    for (int j = 0; j < ORPriceChildren.Count; j++)
+                    {
+                        XmlNode Child2 = ORPriceChildren.Item(j);
+                        if (Child2.Name == "Price")
+                        {
+                            st.Price = Child2.InnerText;
+                        }
+                    }
+                }
+
+                if (Child.Name == "SalesAndPurchase")
+                {
+                    if (Child.SelectSingleNode("./SalesDesc") != null)
+                    {
+                        string SalesDesc = Child.SelectSingleNode("./SalesDesc").InnerText;
+                        st.Description = SalesDesc;
+                    }
+                    if (Child.SelectSingleNode("./SalesPrice") != null)
+                    {
+                        string SalesPrice = Child.SelectSingleNode("./SalesPrice").InnerText;
+                        st.Price = SalesPrice;
+                    }
+                }
+            }
+
+            if (st != null)
+            {
+                db.SaveChanges();
+            }
+
+        }
+
+        private void WalkItemOtherChargeRet(XmlNode ItemOtherChargeRet)
+        {
+            if (ItemOtherChargeRet == null) return;
+
+            MileageRate mr = null;
+            RotoTrackDb db = new RotoTrackDb();
+
+            string ListID = ItemOtherChargeRet.SelectSingleNode("./ListID").InnerText;
+            string Name = ItemOtherChargeRet.SelectSingleNode("./FullName").InnerText;
+
+            if (Name.StartsWith("MILE"))
+            {
+                if (db.MileageRates.Any(f => f.QBListId == ListID))
+                {
+                    mr = db.MileageRates.First(f => f.QBListId == ListID);
+                }
+                else
+                {
+                    mr = new MileageRate();
+                    db.MileageRates.Add(mr);
+                }
+                mr.QBListId = ListID;
+                mr.Name = Name;
+
+                string IsActive = "false";
+                if (ItemOtherChargeRet.SelectSingleNode("./IsActive") != null)
+                {
+                    IsActive = ItemOtherChargeRet.SelectSingleNode("./IsActive").InnerText;
+                }
+                mr.IsActive = (IsActive == "true") ? true : false;
+
+                XmlNodeList ORSalesPurchaseChildren = ItemOtherChargeRet.SelectNodes("./*");
+                for (int i = 0; i < ORSalesPurchaseChildren.Count; i++)
+                {
+                    XmlNode Child = ORSalesPurchaseChildren.Item(i);
+
+                    if (Child.Name == "SalesAndPurchase")
+                    {
+                        if (Child.SelectSingleNode("./SalesDesc") != null)
+                        {
+                            string SalesDesc = Child.SelectSingleNode("./SalesDesc").InnerText;
+                            mr.Description = SalesDesc;
+                        }
+                        if (Child.SelectSingleNode("./SalesPrice") != null)
+                        {
+                            string SalesPrice = Child.SelectSingleNode("./SalesPrice").InnerText;
+                            try
+                            {
+                                mr.Rate = Convert.ToDecimal(SalesPrice);
+                            }
+                            catch (Exception)
+                            {
+                                mr.Rate = 0;
+                            }
+                        }
+                    }
+                }
+
+                if (mr != null)
+                {
+                    db.SaveChanges();
+                }
+            }
         }
 
     }

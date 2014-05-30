@@ -11,7 +11,7 @@ namespace QBMigrationTool
 {
     public class InvoiceDAL
     {
-        public static XmlDocument BuildInvoiceQueryRequest(string fromModifiedDate, string toModifiedDate)
+        public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate, string activeStatus)
         {
             XmlDocument doc = XmlUtils.MakeRequestDocument();
             XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
@@ -22,6 +22,8 @@ namespace QBMigrationTool
             queryElement.AppendChild(dateRangeFilter);
             dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
             dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));
+
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "ActiveStatus", activeStatus));
 
             return doc;
         }
