@@ -97,6 +97,9 @@ namespace QBMigrationTool
 
                 Item o = ItemDAL.FindOrCreateItem(db, ListID, EditSequence, TimeCreated, TimeModified, Name, FullName, IsActive, "ItemService");
                 db.SaveChanges();
+
+                // Now call WalkItemServiceRet to store this in our service type table
+                WalkItemServiceRet(OR);
                                 /*
                 //Get all field values for ClassRef aggregate 
                 XmlNode ClassRef = OR.SelectSingleNode("./ItemServiceRet/ClassRef");
@@ -668,6 +671,9 @@ namespace QBMigrationTool
 
                 Item o = ItemDAL.FindOrCreateItem(db, ListID, EditSequence, TimeCreated, TimeModified, Name, FullName, IsActive, "ItemOtherCharge");
                 db.SaveChanges();
+
+                // Now call WalkItemOtherChargeRet to store data in our mileage rate table, if it applies.
+                WalkItemOtherChargeRet(OR);
 
                 /*
                 //Get all field values for ClassRef aggregate 
@@ -2482,7 +2488,7 @@ namespace QBMigrationTool
             return o;
         }
 
-        private void WalkItemServiceRet(XmlNode ItemServiceRet)
+        private static void WalkItemServiceRet(XmlNode ItemServiceRet)
         {
             if (ItemServiceRet == null) return;
 
@@ -2566,7 +2572,7 @@ namespace QBMigrationTool
 
         }
 
-        private void WalkItemOtherChargeRet(XmlNode ItemOtherChargeRet)
+        private static void WalkItemOtherChargeRet(XmlNode ItemOtherChargeRet)
         {
             if (ItemOtherChargeRet == null) return;
 

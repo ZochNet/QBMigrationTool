@@ -365,8 +365,7 @@ namespace QBMigrationTool
             VehicleMileageDAL.HandleResponse(response);
 
             /*
-             * TODO TODO TODO
-             SPECIAL CASES!!!!!!!!!!!!!!!!Need to handle these in the generic item query below
+             * These are handled in the overall Item Query below--NEED TO TEST!!!!!!  TODO TODO
             BuildQueryRequest(req, "ItemServiceQueryRq", requestID, activeStatus, null, null, null, null);
             BuildQueryRequest(req, "ItemOtherChargeQueryRq", requestID, activeStatus, null, null, null, null);
             */
