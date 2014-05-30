@@ -316,46 +316,49 @@ namespace QBMigrationTool
 
         private void SyncQBData()
         {
+            XmlDocument doc = null;
             string response = "";
             string fromModifiedDate = AppConfig.GetLastSyncTime();
 
             ClearStatus();
             SetStatus("");
-
-            AppendStatus("Query Bills...");
-            AppendStatus(Environment.NewLine);
+            
+            //doc = SalesOrderDAL.BuildSalesOrderQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false));
+            //response = SyncDataHelper(doc, "Sales Orders");
+            //SalesOrderDAL.HandleResponse(response);
+                        
             //response = DoRequest(BillDAL.BuildBillQueryRequest(GetAdjustedDateAsQBString(fromModifiedDate, -300, false), GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            response = QBUtils.DoRequest(BillDAL.BuildBillQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            AppendStatus("Processing Bills...");
-            AppendStatus(Environment.NewLine);
+            doc = BillDAL.BuildBillQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false));
+            response = SyncDataHelper(doc, "Bills");            
             BillDAL.HandleResponse(response);
-
-            AppendStatus("Query Vendors...");
-            AppendStatus(Environment.NewLine);
+                        
             //response = QBUtils.DoRequest(VendorDAL.BuildVendorQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            response = QBUtils.DoRequest(VendorDAL.BuildVendorQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            AppendStatus("Processing Vendors...");
-            AppendStatus(Environment.NewLine);
+            doc = VendorDAL.BuildVendorQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false));
+            response = SyncDataHelper(doc, "Vendors");            
             VendorDAL.HandleResponse(response);
-
-            AppendStatus("Query Invoices...");
-            AppendStatus(Environment.NewLine);
+                        
             //response = QBUtils.DoRequest(InvoiceDAL.BuildInvoiceQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            response = QBUtils.DoRequest(InvoiceDAL.BuildInvoiceQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            AppendStatus("Processing Invoices...");
-            AppendStatus(Environment.NewLine);
+            doc = InvoiceDAL.BuildInvoiceQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false));
+            response = SyncDataHelper(doc, "Invoices");            
             InvoiceDAL.HandleResponse(response);
-
-            AppendStatus("Query Items...");
-            AppendStatus(Environment.NewLine);
+                        
             //response = QBUtils.DoRequest(ItemDAL.BuildItemQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1040, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            response = QBUtils.DoRequest(ItemDAL.BuildItemQueryRequest(XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false)));
-            AppendStatus("Processing Items...");
-            AppendStatus(Environment.NewLine);
+            doc = ItemDAL.BuildItemQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false), XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false));
+            response = SyncDataHelper(doc, "Items");            
             ItemDAL.HandleResponse(response);
 
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);
+        }
+
+        private string SyncDataHelper(XmlDocument doc, string EntityName)
+        {            
+            AppendStatus("Query " + EntityName + "...");
+            AppendStatus(Environment.NewLine);
+            string response = QBUtils.DoRequest(doc);
+            AppendStatus("Processing " + EntityName + "...");
+            AppendStatus(Environment.NewLine);
+            return response;
         }
 
         void aTimer_Elapsed(object sender, ElapsedEventArgs e)
