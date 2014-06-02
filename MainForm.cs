@@ -456,7 +456,9 @@ namespace QBMigrationTool
 
             doc = InvoiceDAL.BuildQueryRequest(fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Invoices");            
-            InvoiceDAL.HandleResponse(response);   
+            InvoiceDAL.HandleResponse(response);
+
+            AppConfig.SetLastSyncTime(DateTime.Now);
 
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);

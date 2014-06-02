@@ -47,8 +47,7 @@ namespace QBMigrationTool
                 XmlAttributeCollection rsAttributes = responseNode.Attributes;
                 string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
                 string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
-                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
-                string requestID = rsAttributes.GetNamedItem("requestID").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;                
 
                 //status code = 0 all OK, > 0 is warning
                 if (Convert.ToInt32(statusCode) >= 0)
@@ -312,8 +311,7 @@ namespace QBMigrationTool
             qbXML.AppendChild(qbXMLMsgsRq);
             qbXMLMsgsRq.SetAttribute("onError", "stopOnError");
             XmlElement custAddRq = doc.CreateElement("CustomerQueryRq");
-            qbXMLMsgsRq.AppendChild(custAddRq);
-            custAddRq.SetAttribute("requestID", "1");
+            qbXMLMsgsRq.AppendChild(custAddRq);            
 
             XmlElement NameFilter = doc.CreateElement("NameFilter");
             custAddRq.AppendChild(NameFilter);
