@@ -313,6 +313,77 @@ namespace QBMigrationTool
             });
         }
         #endregion
+        
+        #region Sync Helper Methods
+        private void AddCustomerType(BillingInstruction bi)
+        {
+            XmlDocument doc = CustomerTypeDAL.BuildAddRq(bi);
+            string response = QBUtils.DoRequest(doc);
+            CustomerTypeDAL.HandleAddResponse(response);
+        }
+
+        private void AddWorkOrder(WorkOrder wo)
+        {
+            XmlDocument doc = WorkOrderDAL.BuildAddRq(wo);
+            string response = QBUtils.DoRequest(doc);
+            WorkOrderDAL.HandleAddResponse(response);
+
+            // Evertime we add a work order, we have to immediately follow up with an update to the work order and the site--QB quirkiness
+            UpdateWorkOrder(wo);
+            UpdateSite(wo);
+        }
+
+        private void UpdateWorkOrderEditSequence(WorkOrder wo)
+        {
+            string ownerID = "0";
+            XmlDocument doc = WorkOrderDAL.BuildQueryRequestForUpdate(wo.QBListId, ownerID);
+            string response = QBUtils.DoRequest(doc);
+            WorkOrderDAL.HandleResponseForUpdate(response);
+        }
+
+        private void UpdateWorkOrder(WorkOrder wo)
+        {
+            XmlDocument doc = WorkOrderDAL.BuildModRq(wo);
+            string response = QBUtils.DoRequest(doc);
+            WorkOrderDAL.HandleModResponse(response);
+        }
+
+        private void UpdateSite(WorkOrder wo)
+        {
+            XmlDocument doc = SiteDAL.BuildUpdateRq(wo);
+            QBUtils.DoRequest(doc);
+        }
+
+        private void AddVehicleMileage(ServiceEntry se, ServiceDetail sd)
+        {
+            XmlDocument doc = VehicleMileageDAL.BuildAddRq(se, sd);
+            if (doc != null)
+            {
+                string response = QBUtils.DoRequest(doc);
+                VehicleMileageDAL.HandleAddResponse(response);
+            }
+        }
+
+        private void AddTimeTracking(ServiceEntry se, ServiceDetail sd, int serviceId, decimal hours)
+        {
+            XmlDocument doc = TimeTrackingDAL.BuildAddRq(se, sd, serviceId, hours);
+            if (doc != null)
+            {
+                string response = QBUtils.DoRequest(doc);
+                TimeTrackingDAL.HandleAddResponse(response);
+            }
+        }
+
+        private string SyncDataHelper(XmlDocument doc, string EntityName)
+        {
+            AppendStatus("Query " + EntityName + "...");
+            AppendStatus(Environment.NewLine);
+            string response = QBUtils.DoRequest(doc);
+            AppendStatus("Processing " + EntityName + "...");
+            AppendStatus(Environment.NewLine);
+            return response;
+        }
+        #endregion
 
         private void SyncQBData()
         {
@@ -439,46 +510,7 @@ namespace QBMigrationTool
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);
         }
-
-        private void AddCustomerType(BillingInstruction bi)
-        {
-            XmlDocument doc = CustomerTypeDAL.BuildAddRq(bi);
-            string response = QBUtils.DoRequest(doc);
-            CustomerTypeDAL.HandleAddResponse(response);
-        }
-
-        private void AddWorkOrder(WorkOrder wo)
-        {
-            XmlDocument doc = WorkOrderDAL.BuildAddRq(wo);
-            string response = QBUtils.DoRequest(doc);
-            WorkOrderDAL.HandleAddResponse(response);
-
-            // Evertime we add a work order, we have to immediately follow up with an update to the work order and the site--QB quirkiness
-            UpdateWorkOrder(wo);
-            UpdateSite(wo);
-        }
-
-        private void UpdateWorkOrderEditSequence(WorkOrder wo)
-        {
-            string ownerID = "0";
-            XmlDocument doc = WorkOrderDAL.BuildQueryRequestForUpdate(wo.QBListId, ownerID);
-            string response = QBUtils.DoRequest(doc);
-            WorkOrderDAL.HandleResponseForUpdate(response);
-        }
-
-        private void UpdateWorkOrder(WorkOrder wo)
-        {
-            XmlDocument doc = WorkOrderDAL.BuildModRq(wo);
-            string response = QBUtils.DoRequest(doc);
-            WorkOrderDAL.HandleModResponse(response);            
-        }
-
-        private void UpdateSite(WorkOrder wo)
-        {
-            XmlDocument doc = SiteDAL.BuildUpdateRq(wo);
-            QBUtils.DoRequest(doc);
-        }
-
+               
         private void SyncDSRs()
         {
             AppendStatus("Syncing DSRs...");
@@ -544,36 +576,7 @@ namespace QBMigrationTool
             AppendStatus(Environment.NewLine);
         }
 
-        private void AddVehicleMileage(ServiceEntry se, ServiceDetail sd)
-        {
-            XmlDocument doc = VehicleMileageDAL.BuildAddRq(se, sd);
-            if (doc != null)
-            {
-                string response = QBUtils.DoRequest(doc);
-                VehicleMileageDAL.HandleAddResponse(response);
-            }
-        }
-
-        private void AddTimeTracking(ServiceEntry se, ServiceDetail sd, int serviceId, decimal hours)
-        {
-            XmlDocument doc = TimeTrackingDAL.BuildAddRq(se, sd, serviceId, hours);
-            if (doc != null)
-            {
-                string response = QBUtils.DoRequest(doc);
-                TimeTrackingDAL.HandleAddResponse(response);
-            }
-        }
-
-        private string SyncDataHelper(XmlDocument doc, string EntityName)
-        {            
-            AppendStatus("Query " + EntityName + "...");
-            AppendStatus(Environment.NewLine);
-            string response = QBUtils.DoRequest(doc);
-            AppendStatus("Processing " + EntityName + "...");
-            AppendStatus(Environment.NewLine);
-            return response;
-        }
-
+        #region GUI Event Processing
         void aTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             ClearStatus();
@@ -677,5 +680,7 @@ namespace QBMigrationTool
         {
             this.Close();
         }
-	}
+        #endregion
+
+    }
 }
