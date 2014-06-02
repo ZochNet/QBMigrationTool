@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
@@ -72,5 +73,18 @@ namespace QBMigrationTool
                 }
             }
         }
+
+        public static string GetGuidFromNotes(string notes)
+        {
+            string retVal = "";
+            Regex guid = new Regex(@"guid=(?<guid>[a-zA-Z0-9-]+)$", RegexOptions.Compiled);
+            Match guidMatch = guid.Match(notes);
+            if (guidMatch.Success)
+            {
+                retVal = guidMatch.Result("${guid}");
+            }
+            return retVal;
+        }
+
     }
 }

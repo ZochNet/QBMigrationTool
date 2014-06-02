@@ -2,6 +2,7 @@
 using rototrack_model;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,20 +12,19 @@ namespace QBMigrationTool
 {
     public class CustomerDAL
     {
-        public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate, string activeStatus, string ownerID)
+        public static XmlDocument BuildQueryRequest(string fromModifiedDate, string activeStatus, string ownerID)
         {
             XmlDocument doc = XmlUtils.MakeRequestDocument();
             XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
             XmlElement queryElement = doc.CreateElement("CustomerQueryRq");
             parent.AppendChild(queryElement);
 
-            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
-            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));            
             queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "ActiveStatus", activeStatus));
             queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "OwnerID", ownerID));
 
             return doc;
-        }
+        }               
 
         public static void HandleResponse(string response)
         {
@@ -55,12 +55,12 @@ namespace QBMigrationTool
                     XmlNodeList CustomerRetList = responseNode.SelectNodes("//CustomerRet");//XPath Query
                     for (int i = 0; i < CustomerRetList.Count; i++)
                     {
-                        XmlNode CustomerRet = CustomerRetList.Item(i);
+                        XmlNode CustomerRet = CustomerRetList.Item(i);                       
                         WalkCustomerRet(CustomerRet);                       
                     }
                 }
             }
-        }
+        }                
 
         private static void WalkCustomerRet(XmlNode CustomerRet)
         {

@@ -2,6 +2,7 @@
 using rototrack_model;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,9 +28,82 @@ namespace QBMigrationTool
             return doc;
         }
 
+        public static XmlDocument BuildAddRq(ServiceEntry se, ServiceDetail sd, int serviceId, decimal hours)
+        {
+            try
+            {
+                XmlDocument doc = XmlUtils.MakeRequestDocument();
+                XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
+
+                RotoTrackDb db = new RotoTrackDb();
+                UserProfile u = db.UserProfiles.Find(sd.TechnicianId);
+                ServiceType st = db.ServiceTypes.Find(serviceId);
+                DSR dsr = db.DSRs.Include("WorkOrder").First(f => f.Id == se.DSRId);
+                Customer c = db.Customers.Find(dsr.WorkOrder.CustomerId);
+                Area a = db.Areas.Find(u.AreaId);
+
+                XmlElement Rq = doc.CreateElement("TimeTrackingAddRq");
+                parent.AppendChild(Rq);
+
+                XmlElement RqType = doc.CreateElement("TimeTrackingAdd");
+                Rq.AppendChild(RqType);
+
+                RqType.AppendChild(XmlUtils.MakeSimpleElem(doc, "TxnDate", se.DateWorked.ToString("yyyy-MM-dd")));
+
+                XmlElement EntityRef = doc.CreateElement("EntityRef");
+                RqType.AppendChild(EntityRef);
+                EntityRef.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", u.QBListId));
+
+                XmlElement CustomerRef = doc.CreateElement("CustomerRef");
+                RqType.AppendChild(CustomerRef);
+                CustomerRef.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", dsr.WorkOrder.QBListId));
+
+                XmlElement ItemServiceRef = doc.CreateElement("ItemServiceRef");
+                RqType.AppendChild(ItemServiceRef);
+                ItemServiceRef.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", st.QBListId));
+
+                HoursMinutes hrsMins = GetHoursMinutesFromDecimal(hours);
+                int hoursInteger = hrsMins.Hours;
+                int minutesInteger = hrsMins.Minutes;
+
+                string duration = "PT" + hoursInteger.ToString() + "H" + minutesInteger.ToString() + "M" + "0S";
+                RqType.AppendChild(XmlUtils.MakeSimpleElem(doc, "Duration", duration));
+
+                XmlElement ClassRef = doc.CreateElement("ClassRef");
+                RqType.AppendChild(ClassRef);
+                ClassRef.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", a.QBListId));
+
+                string notes = "guid=" + se.GUID;
+                RqType.AppendChild(XmlUtils.MakeSimpleElem(doc, "Notes", notes));
+
+                if (st.Name.ToUpper().StartsWith("DIRECT"))
+                {
+                    RqType.AppendChild(XmlUtils.MakeSimpleElem(doc, "BillableStatus", "Billable"));
+                }
+                else
+                {
+                    RqType.AppendChild(XmlUtils.MakeSimpleElem(doc, "BillableStatus", "NotBillable"));
+                }
+
+                return doc;
+            }
+            catch (Exception e)
+            {
+                string evLogTxt = "";
+                evLogTxt = "Error building time tracking add request! " + e.Message + "\r\n";                
+                Logging.RototrackErrorLog(evLogTxt);
+                return null;
+            }
+        }
+
         public static void HandleResponse(string response)
         {
             WalkTimeTrackingQueryRs(response);
+        }
+
+        public static void HandleAddResponse(string response)
+        {
+            WalkTimeTrackingAddRs(response);
         }
 
         private static void WalkTimeTrackingQueryRs(string response)
@@ -156,6 +230,107 @@ namespace QBMigrationTool
             tt.BillableStatus = BillableStatus;
 
             db.SaveChanges();
+        }
+
+        private static void WalkTimeTrackingAddRs(string response)
+        {
+            //Parse the response XML string into an XmlDocument
+            XmlDocument responseXmlDoc = new XmlDocument();
+            responseXmlDoc.LoadXml(response);
+
+            //Get the response for our request
+            XmlNodeList TimeTrackingAddRsList = responseXmlDoc.GetElementsByTagName("TimeTrackingAddRs");
+            if (TimeTrackingAddRsList.Count == 1) //Should always be true since we only did one request in this sample
+            {
+                XmlNode responseNode = TimeTrackingAddRsList.Item(0);
+                //Check the status code, info, and severity
+                XmlAttributeCollection rsAttributes = responseNode.Attributes;
+                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
+                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                //status code = 0 all OK, > 0 is warning
+                if (Convert.ToInt32(statusCode) >= 0)
+                {
+                    XmlNodeList TimeTrackingRetList = responseNode.SelectNodes("//TimeTrackingRet");//XPath Query
+                    for (int i = 0; i < TimeTrackingRetList.Count; i++)
+                    {
+                        XmlNode TimeTrackingRet = TimeTrackingRetList.Item(i);
+                        WalkTimeTrackingRetForAdd(TimeTrackingRet);
+                    }
+                }
+            }
+        }
+
+        private static void WalkTimeTrackingRetForAdd(XmlNode TimeTrackingRet)
+        {
+            if (TimeTrackingRet == null) return;
+
+            string Duration = TimeTrackingRet.SelectSingleNode("./Duration").InnerText;
+            HoursMinutes hrsMins = GetHoursMinutesFromDuration(Duration);
+            if (hrsMins == null) return;
+
+            RotoTrackDb db = new RotoTrackDb();
+
+            string TxnID = "";
+            string seGUID = "";
+            string ItemServiceListID = "";
+
+            if (TimeTrackingRet.SelectSingleNode("./TxnID") != null)
+            {
+                TxnID = TimeTrackingRet.SelectSingleNode("./TxnID").InnerText;
+            }
+            if (TimeTrackingRet.SelectSingleNode("./Notes") != null)
+            {
+                string Notes = TimeTrackingRet.SelectSingleNode("./Notes").InnerText;
+                seGUID = QBUtils.GetGuidFromNotes(Notes);
+            }
+            XmlNode ItemServiceRef = TimeTrackingRet.SelectSingleNode("./ItemServiceRef");
+            if (ItemServiceRef != null)
+            {
+                if (ItemServiceRef.SelectSingleNode("./ListID") != null)
+                {
+                    ItemServiceListID = ItemServiceRef.SelectSingleNode("./ListID").InnerText;
+                }
+            }
+
+            if (TxnID != null && seGUID != null && ItemServiceListID != null)
+            {
+                ServiceEntry se = null;
+                if (db.ServiceEntries.Any(f => f.GUID == seGUID))
+                {
+                    se = db.ServiceEntries.First(f => f.GUID == seGUID);
+                }
+                if (se != null)
+                {
+                    ServiceDetail sd = db.ServiceDetails.Find(se.ServiceDetailId);
+                    if (sd != null)
+                    {
+                        ServiceType regST = db.ServiceTypes.Find(sd.ServiceTypeId);
+                        ServiceType otST = db.ServiceTypes.Find(sd.OTServiceTypeId);
+                        if (regST != null && otST != null)
+                        {
+                            // We always update the regular hours first, so if reg and OT both have the same service list ID, then we need to also check if we already
+                            // wrote out the regular hours or not--else we will put both the reg and ot hours into regular hours since we match on reg hours first.
+                            // I was going to also look at the actual hours and minutes, but if those are identical, too, then this reduces to the same problem we have
+                            // solved here--we just have to assume reg hours are always written first, which they are.  Also, I don't want to compare on hours/minutes
+                            // because that may fail due to rounding errors.
+                            if (ItemServiceListID == regST.QBListId && se.QBListIdForRegularHours == null)
+                            {
+                                se.QBListIdForRegularHours = TxnID;
+                                db.Entry(se).State = EntityState.Modified;
+                                db.SaveChanges();
+                            }
+                            else if (ItemServiceListID == otST.QBListId && se.QBListIdForOTHours == null)
+                            {
+                                se.QBListIdForOTHours = TxnID;
+                                db.Entry(se).State = EntityState.Modified;
+                                db.SaveChanges();
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         public class HoursMinutes

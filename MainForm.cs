@@ -319,15 +319,13 @@ namespace QBMigrationTool
             XmlDocument doc = null;
             string response = "";
             string fromModifiedDate = AppConfig.GetLastSyncTime();
-
-            ClearStatus();
-            SetStatus("");
                         
             string activeStatus = "All";            
             string ownerID = "0";
             string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false); 
-            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);            
-
+            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);
+                        
+            // Sync all necessary data from QB
             doc = ClassDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
             response = SyncDataHelper(doc, "Classes (Areas)");
             ClassDAL.HandleResponse(response);
@@ -336,7 +334,7 @@ namespace QBMigrationTool
             response = SyncDataHelper(doc, "Employees");
             EmployeeDAL.HandleResponse(response);
         
-            doc = CustomerDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus, ownerID);
+            doc = CustomerDAL.BuildQueryRequest(fromDateTime, activeStatus, ownerID);
             response = SyncDataHelper(doc, "Customers");
             CustomerDAL.HandleResponse(response);
 
@@ -393,6 +391,179 @@ namespace QBMigrationTool
             AppendStatus(Environment.NewLine);
         }
 
+        private void SyncWorkOrders()
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            List<WorkOrder> woList = null;
+
+            AppendStatus("Syncing Work Orders...");                    
+
+            // First, all new CustomerTypes (Billing Instructions)
+            List<BillingInstruction> biList = db.BillingInstructions.Where(bi => bi.QBListId == null).ToList();
+            foreach (BillingInstruction bi in biList)
+            {                
+                AddCustomerType(bi);
+
+                // Find and add workorders that need to be added that referred to this
+                woList = db.WorkOrders.Where(wo => wo.QBListId == null && wo.BillingInstructionsId == bi.Id).ToList();
+                foreach (WorkOrder wo in woList)
+                {
+                    AddWorkOrder(wo);
+                }
+            }
+
+            // Next, all the new work orders that need to be added to Quickbooks.  
+            woList = db.WorkOrders.Where(wo => wo.QBListId == null).ToList();
+            foreach (WorkOrder wo in woList)
+            {
+                // Include any where the BillingInstructions QBListID is not null 
+                // since we will take care of adding such workorders after the new BillingInstruction 
+                // is successfully added to QB as a result of a request above
+                BillingInstruction bi = db.BillingInstructions.Find(wo.BillingInstructionsId);
+                if (bi.QBListId != null)
+                {                    
+                    AddWorkOrder(wo);
+                }
+            }
+
+            // Next, all the work orders that need to be updated in Quickbooks
+            woList = db.WorkOrders.Where(wo => wo.NeedToUpdateQB == true).ToList();
+            foreach (WorkOrder wo in woList)
+            {
+                // Update EditSequence for the workorder and then update the work order and site.
+                UpdateWorkOrderEditSequence(wo);
+                UpdateWorkOrder(wo);
+                UpdateSite(wo);
+            }
+              
+            AppendStatus("Done");
+            AppendStatus(Environment.NewLine);
+        }
+
+        private void AddCustomerType(BillingInstruction bi)
+        {
+            XmlDocument doc = CustomerTypeDAL.BuildAddRq(bi);
+            string response = QBUtils.DoRequest(doc);
+            CustomerTypeDAL.HandleAddResponse(response);
+        }
+
+        private void AddWorkOrder(WorkOrder wo)
+        {
+            XmlDocument doc = WorkOrderDAL.BuildAddRq(wo);
+            string response = QBUtils.DoRequest(doc);
+            WorkOrderDAL.HandleAddResponse(response);
+
+            // Evertime we add a work order, we have to immediately follow up with an update to the work order and the site--QB quirkiness
+            UpdateWorkOrder(wo);
+            UpdateSite(wo);
+        }
+
+        private void UpdateWorkOrderEditSequence(WorkOrder wo)
+        {
+            string ownerID = "0";
+            XmlDocument doc = WorkOrderDAL.BuildQueryRequestForUpdate(wo.QBListId, ownerID);
+            string response = QBUtils.DoRequest(doc);
+            WorkOrderDAL.HandleResponseForUpdate(response);
+        }
+
+        private void UpdateWorkOrder(WorkOrder wo)
+        {
+            XmlDocument doc = WorkOrderDAL.BuildModRq(wo);
+            string response = QBUtils.DoRequest(doc);
+            WorkOrderDAL.HandleModResponse(response);            
+        }
+
+        private void UpdateSite(WorkOrder wo)
+        {
+            XmlDocument doc = SiteDAL.BuildUpdateRq(wo);
+            QBUtils.DoRequest(doc);
+        }
+
+        private void SyncDSRs()
+        {
+            AppendStatus("Syncing DSRs...");
+
+            RotoTrackDb db = new RotoTrackDb();
+
+            List<DSR> dsrList = db.DSRs.Include("ServiceEntryList").Where(f => f.IsSynchronizedWithQB == false).ToList();
+            foreach (DSR dsr in dsrList)
+            {
+                if (dsr.Status == DSRStatus.Approved)
+                {
+                    dsr.IsSynchronizedWithQB = true;
+                    db.Entry(dsr).State = EntityState.Modified;
+                    db.SaveChanges();
+
+                    foreach (ServiceEntry se in dsr.ServiceEntryList.ToList())
+                    {
+                        ServiceDetail sd = db.ServiceDetails.Find(se.ServiceDetailId);
+                        if (se.QBListIdForMileage == null)
+                        {
+                            if (se.Mileage == 0)
+                            {
+                                se.QBListIdForMileage = "N/A";
+                                db.Entry(se).State = EntityState.Modified;
+                                db.SaveChanges();
+                            }
+                            else
+                            {                                
+                                AddVehicleMileage(se, sd);
+                            }
+                        }
+                        if (se.QBListIdForRegularHours == null)
+                        {
+                            if (se.RegularHours == 0)
+                            {
+                                se.QBListIdForRegularHours = "N/A";
+                                db.Entry(se).State = EntityState.Modified;
+                                db.SaveChanges();
+                            }
+                            else
+                            {                             
+                                AddTimeTracking(se, sd, sd.ServiceTypeId, se.RegularHours);
+                            }
+                        }
+                        if (se.QBListIdForOTHours == null)
+                        {
+                            if (se.OTHours == 0)
+                            {
+                                se.QBListIdForOTHours = "N/A";
+                                db.Entry(se).State = EntityState.Modified;
+                                db.SaveChanges();
+                            }
+                            else
+                            {                             
+                                AddTimeTracking(se, sd, sd.OTServiceTypeId, se.OTHours);
+                            }
+                        }
+                    }
+                }
+            }
+
+            AppendStatus("Done");
+            AppendStatus(Environment.NewLine);
+        }
+
+        private void AddVehicleMileage(ServiceEntry se, ServiceDetail sd)
+        {
+            XmlDocument doc = VehicleMileageDAL.BuildAddRq(se, sd);
+            if (doc != null)
+            {
+                string response = QBUtils.DoRequest(doc);
+                VehicleMileageDAL.HandleAddResponse(response);
+            }
+        }
+
+        private void AddTimeTracking(ServiceEntry se, ServiceDetail sd, int serviceId, decimal hours)
+        {
+            XmlDocument doc = TimeTrackingDAL.BuildAddRq(se, sd, serviceId, hours);
+            if (doc != null)
+            {
+                string response = QBUtils.DoRequest(doc);
+                TimeTrackingDAL.HandleAddResponse(response);
+            }
+        }
+
         private string SyncDataHelper(XmlDocument doc, string EntityName)
         {            
             AppendStatus("Query " + EntityName + "...");
@@ -405,11 +576,19 @@ namespace QBMigrationTool
 
         void aTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            ClearStatus();
+            SetStatus("");
+            SyncWorkOrders();
+            SyncDSRs();
             SyncQBData();
         }
 
         private void btn_SyncNow_Click(object sender, EventArgs e)
         {
+            ClearStatus();
+            SetStatus("");
+            SyncWorkOrders();
+            SyncDSRs();
             SyncQBData();
         }
 
@@ -429,6 +608,11 @@ namespace QBMigrationTool
                 numericUpDownSyncDuration.Enabled = false;
                 aTimer.Enabled = true;
                 btnAutoSync.Text = "Disable Sync";
+
+                ClearStatus();
+                SetStatus("");
+                SyncWorkOrders();
+                SyncDSRs();
                 SyncQBData();
             }            
         }

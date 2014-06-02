@@ -2,10 +2,12 @@
 using rototrack_model;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using zochnet_utils;
 
 namespace QBMigrationTool
 {
@@ -26,9 +28,73 @@ namespace QBMigrationTool
             return doc;
         }
 
+        public static XmlDocument BuildAddRq(ServiceEntry se, ServiceDetail sd)
+        {
+            try
+            {
+                XmlDocument doc = XmlUtils.MakeRequestDocument();
+                XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
+
+                RotoTrackDb db = new RotoTrackDb();
+                UserProfile u = db.UserProfiles.Find(sd.TechnicianId);
+                Vehicle v = db.Vehicles.Find(sd.VehicleId);
+                DSR dsr = db.DSRs.Include("WorkOrder").First(f => f.Id == se.DSRId);
+                Customer c = db.Customers.Find(dsr.WorkOrder.CustomerId);
+                MileageRate mr = db.MileageRates.Find(sd.MileageRateId);
+                Area a = db.Areas.Find(u.AreaId);
+
+                XmlElement Rq = doc.CreateElement("VehicleMileageAddRq");
+                parent.AppendChild(Rq);
+
+                XmlElement RqType = doc.CreateElement("VehicleMileageAdd");
+                Rq.AppendChild(RqType);
+
+                XmlElement VehicleRef = doc.CreateElement("VehicleRef");
+                RqType.AppendChild(VehicleRef);
+                VehicleRef.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", v.QBListId));
+
+                XmlElement CustomerRef = doc.CreateElement("CustomerRef");
+                RqType.AppendChild(CustomerRef);
+                CustomerRef.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", dsr.WorkOrder.QBListId));
+
+                XmlElement ItemRef = doc.CreateElement("ItemRef");
+                RqType.AppendChild(ItemRef);
+                ItemRef.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", mr.QBListId));
+
+                XmlElement ClassRef = doc.CreateElement("ClassRef");
+                RqType.AppendChild(ClassRef);
+                ClassRef.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", a.QBListId));
+
+                RqType.AppendChild(XmlUtils.MakeSimpleElem(doc, "TripStartDate", se.DateWorked.ToString("yyyy-MM-dd")));
+                RqType.AppendChild(XmlUtils.MakeSimpleElem(doc, "TripEndDate", se.DateWorked.ToString("yyyy-MM-dd")));
+                RqType.AppendChild(XmlUtils.MakeSimpleElem(doc, "TotalMiles", se.Mileage.ToString()));
+                string fullName = "";
+                if (!string.IsNullOrEmpty(u.FirstName)) fullName += u.FirstName;
+                if (!string.IsNullOrEmpty(u.LastName)) fullName += (" " + u.LastName);
+                fullName += " guid=";
+                fullName += se.GUID;
+                RqType.AppendChild(XmlUtils.MakeSimpleElem(doc, "Notes", fullName));
+                RqType.AppendChild(XmlUtils.MakeSimpleElem(doc, "BillableStatus", "Billable"));
+
+                return doc;
+            }
+            catch (Exception e)
+            {
+                string evLogTxt = "";
+                evLogTxt = "Error building vehicle mileage add request! " + e.Message + "\r\n";                
+                Logging.RototrackErrorLog(evLogTxt);
+                return null;
+            }
+        }
+
         public static void HandleResponse(string response)
         {
             WalkVehicleMileageQueryRs(response);
+        }
+
+        public static void HandleAddResponse(string response)
+        {
+            WalkVehicleMileageAddRs(response);
         }
 
         private static void WalkVehicleMileageQueryRs(string response)
@@ -201,5 +267,72 @@ namespace QBMigrationTool
 
             db.SaveChanges();
         }
+
+        private static void WalkVehicleMileageAddRs(string response)
+        {
+            //Parse the response XML string into an XmlDocument
+            XmlDocument responseXmlDoc = new XmlDocument();
+            responseXmlDoc.LoadXml(response);
+
+            //Get the response for our request
+            XmlNodeList VehicleMileageAddRsList = responseXmlDoc.GetElementsByTagName("VehicleMileageAddRs");
+            if (VehicleMileageAddRsList.Count == 1) //Should always be true since we only did one request in this sample
+            {
+                XmlNode responseNode = VehicleMileageAddRsList.Item(0);
+                //Check the status code, info, and severity
+                XmlAttributeCollection rsAttributes = responseNode.Attributes;
+                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
+                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                //status code = 0 all OK, > 0 is warning
+                if (Convert.ToInt32(statusCode) >= 0)
+                {
+                    XmlNodeList VehicleMileageRetList = responseNode.SelectNodes("//VehicleMileageRet");//XPath Query
+                    for (int i = 0; i < VehicleMileageRetList.Count; i++)
+                    {
+                        XmlNode VehicleMileageRet = VehicleMileageRetList.Item(i);
+                        WalkVehicleMileageRetForAdd(VehicleMileageRet);
+                    }
+                }
+            }
+        }
+
+        private static void WalkVehicleMileageRetForAdd(XmlNode VehicleMileageRet)
+        {
+            if (VehicleMileageRet == null) return;
+
+            RotoTrackDb db = new RotoTrackDb();
+
+            //Get value of Notes--we should have the ServiceEntry GUID encoded in it as well.
+            string seGUID = "";
+            if (VehicleMileageRet.SelectSingleNode("./Notes") != null)
+            {
+                string Notes = VehicleMileageRet.SelectSingleNode("./Notes").InnerText;
+                seGUID = QBUtils.GetGuidFromNotes(Notes);
+            }
+
+            string TxnID = "";
+            if (VehicleMileageRet.SelectSingleNode("./TxnID") != null)
+            {
+                TxnID = VehicleMileageRet.SelectSingleNode("./TxnID").InnerText;
+            }
+
+            if (seGUID != "" && TxnID != "")
+            {
+                ServiceEntry se = null;
+                if (db.ServiceEntries.Any(f => f.GUID == seGUID))
+                {
+                    se = db.ServiceEntries.First(f => f.GUID == seGUID);
+                }
+                if (se != null)
+                {
+                    se.QBListIdForMileage = TxnID;
+                    db.Entry(se).State = EntityState.Modified;
+                    db.SaveChanges();
+                }
+            }
+        }
+
     }
 }
