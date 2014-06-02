@@ -397,27 +397,27 @@ namespace QBMigrationTool
             string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);
                         
             // Sync all necessary data from QB
-            doc = ClassDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            doc = ClassDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Classes (Areas)");
             ClassDAL.HandleResponse(response);
-            
-            doc = EmployeeDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus, ownerID);
+
+            doc = EmployeeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime, ownerID);
             response = SyncDataHelper(doc, "Employees");
             EmployeeDAL.HandleResponse(response);
-        
-            doc = CustomerDAL.BuildQueryRequest(fromDateTime, activeStatus, ownerID);
+
+            doc = CustomerDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime, ownerID);
             response = SyncDataHelper(doc, "Customers");
             CustomerDAL.HandleResponse(response);
 
-            doc = CustomerTypeDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            doc = CustomerTypeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Customer Types");
             CustomerTypeDAL.HandleResponse(response);
 
-            doc = VehicleDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            doc = VehicleDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Vehicles");
             VehicleDAL.HandleResponse(response);
 
-            doc = JobTypeDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            doc = JobTypeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Job Types");
             JobTypeDAL.HandleResponse(response);
 
@@ -438,23 +438,23 @@ namespace QBMigrationTool
             BuildQueryRequest(req, "ItemServiceQueryRq", requestID, activeStatus, null, null, null, null);
             BuildQueryRequest(req, "ItemOtherChargeQueryRq", requestID, activeStatus, null, null, null, null);
             */
-            doc = ItemDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            doc = ItemDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Items");
             ItemDAL.HandleResponse(response);
 
-            doc = VendorDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            doc = VendorDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Vendors");
             VendorDAL.HandleResponse(response);
 
-            doc = BillDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            doc = BillDAL.BuildQueryRequest(fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Bills");            
             BillDAL.HandleResponse(response);
 
-            doc = SalesOrderDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            doc = SalesOrderDAL.BuildQueryRequest(fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Sales Orders");
-            SalesOrderDAL.HandleResponse(response);            
-            
-            doc = InvoiceDAL.BuildQueryRequest(fromDateTime, toDateTime, activeStatus);
+            SalesOrderDAL.HandleResponse(response);
+
+            doc = InvoiceDAL.BuildQueryRequest(fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Invoices");            
             InvoiceDAL.HandleResponse(response);   
 

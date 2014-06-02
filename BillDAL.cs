@@ -11,7 +11,7 @@ namespace QBMigrationTool
 {
     public class BillDAL
     {
-        public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate, string activeStatus)
+        public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate)
         {
             XmlDocument doc = XmlUtils.MakeRequestDocument();
             XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
@@ -21,9 +21,7 @@ namespace QBMigrationTool
             XmlElement dateRangeFilter = doc.CreateElement("ModifiedDateRangeFilter");
             queryElement.AppendChild(dateRangeFilter);
             dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
-            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));
-
-            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "ActiveStatus", activeStatus));
+            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));                        
             queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "IncludeLineItems", "1"));
 
             return doc;

@@ -11,16 +11,16 @@ namespace QBMigrationTool
 {
     public class ItemDAL
     {
-        public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate, string activeStatus)
+        public static XmlDocument BuildQueryRequest(string activeStatus, string fromModifiedDate, string toModifiedDate)
         {
             XmlDocument doc = XmlUtils.MakeRequestDocument();
             XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
             XmlElement queryElement = doc.CreateElement("ItemQueryRq");
             parent.AppendChild(queryElement);
-                        
-            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
-            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));
+
             queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "ActiveStatus", activeStatus));
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));            
 
             return doc;
         }
