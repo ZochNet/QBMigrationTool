@@ -315,43 +315,54 @@ namespace QBMigrationTool
         #endregion
         
         #region Sync Helper Methods
-        private void AddCustomerType(BillingInstruction bi)
+        private void AddCustomerType(int biID)
         {
+            RotoTrackDb db = new RotoTrackDb();
+            BillingInstruction bi = db.BillingInstructions.Find(biID);
+
             XmlDocument doc = CustomerTypeDAL.BuildAddRq(bi);
             string response = QBUtils.DoRequest(doc);
             CustomerTypeDAL.HandleAddResponse(response);
         }
 
-        private void AddWorkOrder(WorkOrder wo)
+        private void AddWorkOrder(int woID)
         {
+            RotoTrackDb db = new RotoTrackDb();
+            WorkOrder wo = db.WorkOrders.Find(woID);
+
             XmlDocument doc = WorkOrderDAL.BuildAddRq(wo);
             string response = QBUtils.DoRequest(doc);
             WorkOrderDAL.HandleAddResponse(response);
-
-            // Evertime we add a work order, we have to immediately follow up with an update to the work order and the site--QB quirkiness
-            UpdateWorkOrder(wo);
-            UpdateSite(wo);
         }
 
-        private void UpdateWorkOrderEditSequence(WorkOrder wo)
+        private void UpdateWorkOrderEditSequence(int woID)
         {
+            RotoTrackDb db = new RotoTrackDb();
+            WorkOrder wo = db.WorkOrders.Find(woID);
+
             string ownerID = "0";
             XmlDocument doc = WorkOrderDAL.BuildQueryRequestForUpdate(wo.QBListId, ownerID);
             string response = QBUtils.DoRequest(doc);
             WorkOrderDAL.HandleResponseForUpdate(response);
         }
 
-        private void UpdateWorkOrder(WorkOrder wo)
+        private void UpdateWorkOrder(int woID)
         {
+            RotoTrackDb db = new RotoTrackDb();
+            WorkOrder wo = db.WorkOrders.Find(woID);
+
             XmlDocument doc = WorkOrderDAL.BuildModRq(wo);
             string response = QBUtils.DoRequest(doc);
             WorkOrderDAL.HandleModResponse(response);
         }
 
-        private void UpdateSite(WorkOrder wo)
+        private void UpdateSite(int woID)
         {
+            RotoTrackDb db = new RotoTrackDb();
+            WorkOrder wo = db.WorkOrders.Find(woID);
+
             XmlDocument doc = SiteDAL.BuildUpdateRq(wo);
-            QBUtils.DoRequest(doc);
+            string response = QBUtils.DoRequest(doc);
         }
 
         private void AddVehicleMileage(ServiceEntry se, ServiceDetail sd)
@@ -385,85 +396,7 @@ namespace QBMigrationTool
         }
         #endregion
 
-        private void SyncQBData()
-        {
-            XmlDocument doc = null;
-            string response = "";
-            string fromModifiedDate = AppConfig.GetLastSyncTime();
-                        
-            string activeStatus = "All";            
-            string ownerID = "0";
-            string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false); 
-            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);
-                        
-            // Sync all necessary data from QB
-            doc = ClassDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Classes (Areas)");
-            ClassDAL.HandleResponse(response);
-
-            doc = EmployeeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime, ownerID);
-            response = SyncDataHelper(doc, "Employees");
-            EmployeeDAL.HandleResponse(response);
-
-            doc = CustomerDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime, ownerID);
-            response = SyncDataHelper(doc, "Customers");
-            CustomerDAL.HandleResponse(response);
-
-            doc = CustomerTypeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Customer Types");
-            CustomerTypeDAL.HandleResponse(response);
-
-            doc = VehicleDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Vehicles");
-            VehicleDAL.HandleResponse(response);
-
-            doc = JobTypeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Job Types");
-            JobTypeDAL.HandleResponse(response);
-
-            doc = TimeTrackingDAL.BuildQueryRequest(fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Time Trackings");
-            TimeTrackingDAL.HandleResponse(response);
-
-            // Exception for VehicleMileage due to bug in Quickbooks where querying against modified date gets all the mileage--so have to use transaction date, back 30 days.
-            // "yyyy-MM-ddTHH:mm:ssK" or "yyyy-MM-dd" - Go from 30 days ago until a day past today
-            string fromDateOnly = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -30, true);
-            string toDateOnly = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, true);
-            doc = VehicleMileageDAL.BuildQueryRequest(fromDateOnly, toDateOnly);
-            response = SyncDataHelper(doc, "Vehicle Mileage");
-            VehicleMileageDAL.HandleResponse(response);
-
-            /*
-             * These are handled in the overall Item Query below--NEED TO TEST!!!!!!  TODO TODO
-            BuildQueryRequest(req, "ItemServiceQueryRq", requestID, activeStatus, null, null, null, null);
-            BuildQueryRequest(req, "ItemOtherChargeQueryRq", requestID, activeStatus, null, null, null, null);
-            */
-            doc = ItemDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Items");
-            ItemDAL.HandleResponse(response);
-
-            doc = VendorDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Vendors");
-            VendorDAL.HandleResponse(response);
-
-            doc = BillDAL.BuildQueryRequest(fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Bills");            
-            BillDAL.HandleResponse(response);
-
-            doc = SalesOrderDAL.BuildQueryRequest(fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Sales Orders");
-            SalesOrderDAL.HandleResponse(response);
-
-            doc = InvoiceDAL.BuildQueryRequest(fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Invoices");            
-            InvoiceDAL.HandleResponse(response);
-
-            AppConfig.SetLastSyncTime(DateTime.Now);
-
-            AppendStatus("Done");
-            AppendStatus(Environment.NewLine);
-        }
-
+        #region Main Sync Functions
         private void SyncWorkOrders()
         {
             RotoTrackDb db = new RotoTrackDb();
@@ -475,13 +408,17 @@ namespace QBMigrationTool
             List<BillingInstruction> biList = db.BillingInstructions.Where(bi => bi.QBListId == null).ToList();
             foreach (BillingInstruction bi in biList)
             {                
-                AddCustomerType(bi);
+                AddCustomerType(bi.Id);
 
                 // Find and add workorders that need to be added that referred to this
                 woList = db.WorkOrders.Where(wo => wo.QBListId == null && wo.BillingInstructionsId == bi.Id).ToList();
                 foreach (WorkOrder wo in woList)
                 {
-                    AddWorkOrder(wo);
+                    AddWorkOrder(wo.Id);
+                    // Evertime we add a work order, we have to immediately follow up with an update to the work order and the site--QB quirkiness
+                    // But first, get the latest copy from the database            
+                    UpdateWorkOrder(wo.Id);
+                    UpdateSite(wo.Id);
                 }
             }
 
@@ -495,7 +432,11 @@ namespace QBMigrationTool
                 BillingInstruction bi = db.BillingInstructions.Find(wo.BillingInstructionsId);
                 if (bi.QBListId != null)
                 {                    
-                    AddWorkOrder(wo);
+                    AddWorkOrder(wo.Id);
+                    // Evertime we add a work order, we have to immediately follow up with an update to the work order and the site--QB quirkiness
+                    // But first, get the latest copy from the database            
+                    UpdateWorkOrder(wo.Id);
+                    UpdateSite(wo.Id);
                 }
             }
 
@@ -504,9 +445,9 @@ namespace QBMigrationTool
             foreach (WorkOrder wo in woList)
             {
                 // Update EditSequence for the workorder and then update the work order and site.
-                UpdateWorkOrderEditSequence(wo);
-                UpdateWorkOrder(wo);
-                UpdateSite(wo);
+                UpdateWorkOrderEditSequence(wo.Id);
+                UpdateWorkOrder(wo.Id);
+                UpdateSite(wo.Id);
             }
               
             AppendStatus("Done");
@@ -577,6 +518,86 @@ namespace QBMigrationTool
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);
         }
+
+        private void SyncQBData()
+        {
+            XmlDocument doc = null;
+            string response = "";
+            string fromModifiedDate = AppConfig.GetLastSyncTime();
+
+            string activeStatus = "All";
+            string ownerID = "0";
+            string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false);
+            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);
+
+            // Sync all necessary data from QB
+            doc = ClassDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Classes (Areas)");
+            ClassDAL.HandleResponse(response);
+
+            doc = EmployeeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime, ownerID);
+            response = SyncDataHelper(doc, "Employees");
+            EmployeeDAL.HandleResponse(response);
+
+            doc = CustomerDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime, ownerID);
+            response = SyncDataHelper(doc, "Customers");
+            CustomerDAL.HandleResponse(response);
+
+            doc = CustomerTypeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Customer Types");
+            CustomerTypeDAL.HandleResponse(response);
+
+            doc = VehicleDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Vehicles");
+            VehicleDAL.HandleResponse(response);
+
+            doc = JobTypeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Job Types");
+            JobTypeDAL.HandleResponse(response);
+
+            doc = TimeTrackingDAL.BuildQueryRequest(fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Time Trackings");
+            TimeTrackingDAL.HandleResponse(response);
+
+            // Exception for VehicleMileage due to bug in Quickbooks where querying against modified date gets all the mileage--so have to use transaction date, back 30 days.
+            // "yyyy-MM-ddTHH:mm:ssK" or "yyyy-MM-dd" - Go from 30 days ago until a day past today
+            string fromDateOnly = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -30, true);
+            string toDateOnly = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, true);
+            doc = VehicleMileageDAL.BuildQueryRequest(fromDateOnly, toDateOnly);
+            response = SyncDataHelper(doc, "Vehicle Mileage");
+            VehicleMileageDAL.HandleResponse(response);
+
+            /*
+             * These are handled in the overall Item Query below--NEED TO TEST!!!!!!  TODO TODO
+            BuildQueryRequest(req, "ItemServiceQueryRq", requestID, activeStatus, null, null, null, null);
+            BuildQueryRequest(req, "ItemOtherChargeQueryRq", requestID, activeStatus, null, null, null, null);
+            */
+            doc = ItemDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Items");
+            ItemDAL.HandleResponse(response);
+
+            doc = VendorDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Vendors");
+            VendorDAL.HandleResponse(response);
+
+            doc = BillDAL.BuildQueryRequest(fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Bills");
+            BillDAL.HandleResponse(response);
+
+            doc = SalesOrderDAL.BuildQueryRequest(fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Sales Orders");
+            SalesOrderDAL.HandleResponse(response);
+
+            doc = InvoiceDAL.BuildQueryRequest(fromDateTime, toDateTime);
+            response = SyncDataHelper(doc, "Invoices");
+            InvoiceDAL.HandleResponse(response);
+
+            AppConfig.SetLastSyncTime(DateTime.Now);
+
+            AppendStatus("Done");
+            AppendStatus(Environment.NewLine);
+        }
+        #endregion
 
         #region GUI Event Processing
         void aTimer_Elapsed(object sender, ElapsedEventArgs e)

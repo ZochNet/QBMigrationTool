@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
+using zochnet_utils;
 
 namespace QBMigrationTool
 {
@@ -17,30 +18,46 @@ namespace QBMigrationTool
             RequestProcessor2 rp = null;
             string ticket = null;
             string response = null;
-            try
+            bool errorOccurred = false;
+            int maxTries = 5;
+            int tries = 0;
+
+            do
             {
-                rp = new RequestProcessor2();
-                rp.OpenConnection("QBMT1", "QBMigrationTool");
-                ticket = rp.BeginSession("", QBFileMode.qbFileOpenDoNotCare);
-                response = rp.ProcessRequest(ticket, doc.OuterXml);
-                return response;
-            }
-            catch (System.Runtime.InteropServices.COMException ex)
-            {
-                MessageBox.Show("COM Error Description = " + ex.Message, "COM error");
-                return ex.Message;
-            }
-            finally
-            {
-                if (ticket != null)
+                try
                 {
-                    rp.EndSession(ticket);
+                    tries++;
+                    rp = new RequestProcessor2();
+                    rp.OpenConnection("QBMT1", "QBMigrationTool");
+                    ticket = rp.BeginSession("", QBFileMode.qbFileOpenDoNotCare);
+                    response = rp.ProcessRequest(ticket, doc.OuterXml);
+
+                    if (errorOccurred)
+                    {
+                        Logging.RototrackErrorLog("QBMigrationTool: DoRequest Retry succeeded.");
+                        errorOccurred = false;
+                    }
                 }
-                if (rp != null)
+                catch (System.Runtime.InteropServices.COMException)
                 {
-                    rp.CloseConnection();
+                    Logging.RototrackErrorLog("QBMigrationTool:  Error in DoRequest.  Retrying...");
+                    errorOccurred = true;
                 }
-            }
+                finally
+                {
+                    if (ticket != null)
+                    {
+                        rp.EndSession(ticket);
+                    }
+                    if (rp != null)
+                    {
+                        rp.CloseConnection();
+                    }
+                }
+
+            } while (errorOccurred && tries <= maxTries);
+
+            return response;
         }
 
         public static string DoRequestRaw(string rawXML)
