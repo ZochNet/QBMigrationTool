@@ -28,6 +28,21 @@ namespace QBMigrationTool
             return doc;
         }
 
+        public static XmlDocument BuildQueryRequest2(string fromModifiedDate, string toModifiedDate)
+        {
+            XmlDocument doc = XmlUtils.MakeRequestDocument();
+            XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
+            XmlElement queryElement = doc.CreateElement("VehicleMileageQueryRq");
+            parent.AppendChild(queryElement);
+
+            XmlElement dateRangeFilter = doc.CreateElement("ModifiedDateRangeFilter");
+            queryElement.AppendChild(dateRangeFilter);
+            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
+            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));
+
+            return doc;
+        }
+
         public static XmlDocument BuildAddRq(ServiceEntry se, ServiceDetail sd)
         {
             try

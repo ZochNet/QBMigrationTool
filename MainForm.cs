@@ -25,6 +25,7 @@ using rototrack_data_access;
 using rototrack_model;
 using System.Linq;
 using System.Timers;
+using zochnet_utils;
 
 namespace QBMigrationTool
 {
@@ -365,8 +366,12 @@ namespace QBMigrationTool
             string response = QBUtils.DoRequest(doc);
         }
 
-        private void AddVehicleMileage(ServiceEntry se, ServiceDetail sd)
+        private void AddVehicleMileage(int seID, int sdID)
         {
+            RotoTrackDb db = new RotoTrackDb();
+            ServiceEntry se = db.ServiceEntries.Find(seID);
+            ServiceDetail sd = db.ServiceDetails.Find(sdID);
+
             XmlDocument doc = VehicleMileageDAL.BuildAddRq(se, sd);
             if (doc != null)
             {
@@ -375,8 +380,12 @@ namespace QBMigrationTool
             }
         }
 
-        private void AddTimeTracking(ServiceEntry se, ServiceDetail sd, int serviceId, decimal hours)
+        private void AddTimeTracking(int seID, int sdID, int serviceId, decimal hours)
         {
+            RotoTrackDb db = new RotoTrackDb();
+            ServiceEntry se = db.ServiceEntries.Find(seID);
+            ServiceDetail sd = db.ServiceDetails.Find(sdID);
+
             XmlDocument doc = TimeTrackingDAL.BuildAddRq(se, sd, serviceId, hours);
             if (doc != null)
             {
@@ -394,9 +403,60 @@ namespace QBMigrationTool
             AppendStatus(Environment.NewLine);
             return response;
         }
+
+        private int GetNumUnsyncedWorkOrders()
+        {
+            RotoTrackDb db = new RotoTrackDb();
+
+            int count = 0;
+            List<WorkOrder> workorders = db.WorkOrders.SqlQuery("select * from WorkOrders where NeedToUpdateQB=1").ToList();
+            count += workorders.Count();
+
+            workorders = db.WorkOrders.SqlQuery("select * from WorkOrders where QBListId is null").ToList();
+            count += workorders.Count();
+
+            return count;
+        }
+
+        private int GetNumUnsyncedDSRs()
+        {
+            RotoTrackDb db = new RotoTrackDb();
+
+            var dsrs = db.DSRs.Where(f => f.IsSynchronizedWithQB == true).ToList();
+            var serviceentries = db.ServiceEntries.Where(f => f.QBListIdForMileage == null || f.QBListIdForRegularHours == null || f.QBListIdForOTHours == null).ToList();
+
+            var unsynced = dsrs.AsQueryable()
+                        .Join(serviceentries, d => d.Id, s => s.DSRId, (d, s) => new
+                        {
+                            d.Id
+                        });
+
+            return unsynced.Count();
+        }
         #endregion
 
         #region Main Sync Functions
+        private void DoSync()
+        {
+            ClearStatus();
+            SetStatus("");
+            SyncWorkOrders();
+            SyncDSRs();
+
+            //int numUnsyncedWorkOrders = GetNumUnsyncedWorkOrders();
+            //int numUnsyncedDSRs = GetNumUnsyncedDSRs();
+            //if (numUnsyncedWorkOrders > 0)
+            //{
+            //    Logging.RototrackErrorLog("There are " + numUnsyncedWorkOrders.ToString() + " Work Orders that failed to sync with QB!");
+            //}
+            //if (numUnsyncedDSRs > 0)
+            //{
+            //    Logging.RototrackErrorLog("There are " + numUnsyncedDSRs.ToString() + " DSRs that failed to sync with QB!");
+            //}
+
+            SyncQBData();
+        }
+
         private void SyncWorkOrders()
         {
             RotoTrackDb db = new RotoTrackDb();
@@ -482,7 +542,7 @@ namespace QBMigrationTool
                             }
                             else
                             {                                
-                                AddVehicleMileage(se, sd);
+                                AddVehicleMileage(se.Id, se.ServiceDetailId);
                             }
                         }
                         if (se.QBListIdForRegularHours == null)
@@ -495,7 +555,7 @@ namespace QBMigrationTool
                             }
                             else
                             {                             
-                                AddTimeTracking(se, sd, sd.ServiceTypeId, se.RegularHours);
+                                AddTimeTracking(se.Id, se.ServiceDetailId, sd.ServiceTypeId, se.RegularHours);
                             }
                         }
                         if (se.QBListIdForOTHours == null)
@@ -508,7 +568,7 @@ namespace QBMigrationTool
                             }
                             else
                             {                             
-                                AddTimeTracking(se, sd, sd.OTServiceTypeId, se.OTHours);
+                                AddTimeTracking(se.Id, se.ServiceDetailId, sd.OTServiceTypeId, se.OTHours);
                             }
                         }
                     }
@@ -529,7 +589,7 @@ namespace QBMigrationTool
             string ownerID = "0";
             string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false);
             string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);
-
+                        
             // Sync all necessary data from QB
             doc = ClassDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Classes (Areas)");
@@ -558,20 +618,19 @@ namespace QBMigrationTool
             doc = TimeTrackingDAL.BuildQueryRequest(fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Time Trackings");
             TimeTrackingDAL.HandleResponse(response);
-
+            
             // Exception for VehicleMileage due to bug in Quickbooks where querying against modified date gets all the mileage--so have to use transaction date, back 30 days.
-            // "yyyy-MM-ddTHH:mm:ssK" or "yyyy-MM-dd" - Go from 30 days ago until a day past today
+            // "yyyy-MM-ddTHH:mm:ssK" or "yyyy-MM-dd"
             string fromDateOnly = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -30, true);
             string toDateOnly = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, true);
             doc = VehicleMileageDAL.BuildQueryRequest(fromDateOnly, toDateOnly);
             response = SyncDataHelper(doc, "Vehicle Mileage");
             VehicleMileageDAL.HandleResponse(response);
-
-            /*
-             * These are handled in the overall Item Query below--NEED TO TEST!!!!!!  TODO TODO
-            BuildQueryRequest(req, "ItemServiceQueryRq", requestID, activeStatus, null, null, null, null);
-            BuildQueryRequest(req, "ItemOtherChargeQueryRq", requestID, activeStatus, null, null, null, null);
-            */
+                     
+            //doc = VehicleMileageDAL.BuildQueryRequest2(fromDateTime, toDateTime);
+            //response = SyncDataHelper(doc, "Vehicle Mileage");
+            //VehicleMileageDAL.HandleResponse(response);
+                
             doc = ItemDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Items");
             ItemDAL.HandleResponse(response);
@@ -590,32 +649,26 @@ namespace QBMigrationTool
 
             doc = InvoiceDAL.BuildQueryRequest(fromDateTime, toDateTime);
             response = SyncDataHelper(doc, "Invoices");
-            InvoiceDAL.HandleResponse(response);
+            InvoiceDAL.HandleResponse(response);            
 
             AppConfig.SetLastSyncTime(DateTime.Now);
 
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);
         }
-        #endregion
+        #endregion         
 
         #region GUI Event Processing
         void aTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            ClearStatus();
-            SetStatus("");
-            SyncWorkOrders();
-            SyncDSRs();
-            SyncQBData();
+            aTimer.Enabled = false;
+            DoSync();
+            aTimer.Enabled = true;
         }
 
         private void btn_SyncNow_Click(object sender, EventArgs e)
         {
-            ClearStatus();
-            SetStatus("");
-            SyncWorkOrders();
-            SyncDSRs();
-            SyncQBData();
+            DoSync();
         }
 
         private void btnAutoSync_Click(object sender, EventArgs e)
@@ -631,15 +684,11 @@ namespace QBMigrationTool
             {
                 aTimer.Interval = (double)numericUpDownSyncDuration.Value * 100000;
                 btnSyncNow.Enabled = false;
-                numericUpDownSyncDuration.Enabled = false;
-                aTimer.Enabled = true;
+                numericUpDownSyncDuration.Enabled = false;                
                 btnAutoSync.Text = "Disable Sync";
 
-                ClearStatus();
-                SetStatus("");
-                SyncWorkOrders();
-                SyncDSRs();
-                SyncQBData();
+                DoSync();
+                aTimer.Enabled = true;
             }            
         }
               
