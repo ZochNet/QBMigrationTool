@@ -364,6 +364,7 @@ namespace QBMigrationTool
 
             XmlDocument doc = SiteDAL.BuildUpdateRq(wo);
             string response = QBUtils.DoRequest(doc);
+            SiteDAL.HandleResponse(response);
         }
 
         private void AddVehicleMileage(int seID, int sdID)
@@ -394,13 +395,10 @@ namespace QBMigrationTool
             }
         }
 
-        private string SyncDataHelper(XmlDocument doc, string EntityName)
-        {
-            AppendStatus("Query " + EntityName + "...");
-            AppendStatus(Environment.NewLine);
+        private string SyncDataHelper(XmlDocument doc)
+        {                      
             string response = QBUtils.DoRequest(doc);
-            AppendStatus("Processing " + EntityName + "...");
-            AppendStatus(Environment.NewLine);
+
             return response;
         }
 
@@ -453,6 +451,9 @@ namespace QBMigrationTool
             }
 
             SyncQBData();
+            
+            AppendStatus("Sync Completed: " + DateTime.Now.ToString());
+            AppendStatus(Environment.NewLine);
         }
 
         private void SyncWorkOrders()
@@ -583,7 +584,7 @@ namespace QBMigrationTool
         {
             XmlDocument doc = null;
             string response = "";
-            string fromModifiedDate = AppConfig.GetLastSyncTime();
+            string fromModifiedDate = AppConfig.GetLastSyncTime();            
 
             string activeStatus = "All";
             string ownerID = "0";
@@ -591,70 +592,105 @@ namespace QBMigrationTool
             string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);
                         
             // Sync all necessary data from QB
+            AppendStatus("Sync Classes (Areas)...");              
             doc = ClassDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Classes (Areas)");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             ClassDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Employees...");              
             doc = EmployeeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime, ownerID);
-            response = SyncDataHelper(doc, "Employees");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             EmployeeDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Customers...");              
             doc = CustomerDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime, ownerID);
-            response = SyncDataHelper(doc, "Customers");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             CustomerDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Customer Types...");              
             doc = CustomerTypeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Customer Types");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             CustomerTypeDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Vehicles...");              
             doc = VehicleDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Vehicles");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             VehicleDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Job Types...");              
             doc = JobTypeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Job Types");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             JobTypeDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Time Tracking...");              
             doc = TimeTrackingDAL.BuildQueryRequest(fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Time Trackings");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             TimeTrackingDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
             
             // Exception for VehicleMileage due to bug in Quickbooks where querying against modified date gets all the mileage--so have to use transaction date, back 30 days.
             // "yyyy-MM-ddTHH:mm:ssK" or "yyyy-MM-dd"
+            AppendStatus("Sync Vehicle Mileage...");              
             string fromDateOnly = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -30, true);
             string toDateOnly = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, true);
             doc = VehicleMileageDAL.BuildQueryRequest(fromDateOnly, toDateOnly);
-            response = SyncDataHelper(doc, "Vehicle Mileage");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             VehicleMileageDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
                      
             //doc = VehicleMileageDAL.BuildQueryRequest2(fromDateTime, toDateTime);
             //response = SyncDataHelper(doc, "Vehicle Mileage");
             //VehicleMileageDAL.HandleResponse(response);
-                
+            AppendStatus("Sync Items...");                  
             doc = ItemDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Items");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             ItemDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Vendors...");              
             doc = VendorDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Vendors");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             VendorDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Bills...");              
             doc = BillDAL.BuildQueryRequest(fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Bills");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             BillDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Sales Orders...");              
             doc = SalesOrderDAL.BuildQueryRequest(fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Sales Orders");
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
             SalesOrderDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Invoices...");              
             doc = InvoiceDAL.BuildQueryRequest(fromDateTime, toDateTime);
-            response = SyncDataHelper(doc, "Invoices");
-            InvoiceDAL.HandleResponse(response);            
-
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
+            InvoiceDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
+            
             AppConfig.SetLastSyncTime(DateTime.Now);
-
-            AppendStatus("Done");
-            AppendStatus(Environment.NewLine);
         }
         #endregion         
 

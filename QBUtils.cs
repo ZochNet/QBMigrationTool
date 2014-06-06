@@ -103,5 +103,12 @@ namespace QBMigrationTool
             return retVal;
         }
 
+        public static void CheckStatus(string statusCode, string statusSeverity, string statusMessage)
+        {
+            if (Convert.ToInt32(statusCode) != 0)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool Error: " + statusMessage);
+            }
+        }
     }
 }

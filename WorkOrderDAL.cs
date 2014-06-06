@@ -217,6 +217,9 @@ namespace QBMigrationTool
                 string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
                 string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
 
+                // Check status and log any errors
+                QBUtils.CheckStatus(statusCode, statusSeverity, statusMessage);
+
                 //status code = 0 all OK, > 0 is warning
                 if (Convert.ToInt32(statusCode) >= 0)
                 {
@@ -270,6 +273,9 @@ namespace QBMigrationTool
                 string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
                 string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
 
+                // Check status and log any errors
+                QBUtils.CheckStatus(statusCode, statusSeverity, statusMessage);
+
                 //status code = 0 all OK, > 0 is warning
                 if (Convert.ToInt32(statusCode) >= 0)
                 {
@@ -315,7 +321,10 @@ namespace QBMigrationTool
                 XmlAttributeCollection rsAttributes = responseNode.Attributes;
                 string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
                 string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
-                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;                
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                // Check status and log any errors
+                QBUtils.CheckStatus(statusCode, statusSeverity, statusMessage);
 
                 //status code = 0 all OK, > 0 is warning
                 if (Convert.ToInt32(statusCode) >= 0)
