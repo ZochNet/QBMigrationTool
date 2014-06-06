@@ -409,10 +409,10 @@ namespace QBMigrationTool
             RotoTrackDb db = new RotoTrackDb();
 
             int count = 0;
-            List<WorkOrder> workorders = db.WorkOrders.SqlQuery("select * from WorkOrders where NeedToUpdateQB=1").ToList();
+            var workorders = db.Database.SqlQuery<int>("select ID from WorkOrders where NeedToUpdateQB=1").ToList();                        
             count += workorders.Count();
 
-            workorders = db.WorkOrders.SqlQuery("select * from WorkOrders where QBListId is null").ToList();
+            workorders = db.Database.SqlQuery<int>("select ID from WorkOrders where QBListId is null").ToList();
             count += workorders.Count();
 
             return count;
@@ -422,16 +422,14 @@ namespace QBMigrationTool
         {
             RotoTrackDb db = new RotoTrackDb();
 
-            var dsrs = db.DSRs.Where(f => f.IsSynchronizedWithQB == true).ToList();
-            var serviceentries = db.ServiceEntries.Where(f => f.QBListIdForMileage == null || f.QBListIdForRegularHours == null || f.QBListIdForOTHours == null).ToList();
+            int count = 0;
+            var dsrs = db.Database.SqlQuery<int>("select Id from DSRs where Status = 3 and IsSynchronizedWithQB = 0").ToList();
+            count += dsrs.Count();
 
-            var unsynced = dsrs.AsQueryable()
-                        .Join(serviceentries, d => d.Id, s => s.DSRId, (d, s) => new
-                        {
-                            d.Id
-                        });
+            dsrs = db.Database.SqlQuery<int>("select d.Id from DSRs d inner join ServiceEntries se on se.DSRId = d.Id where d.IsSynchronizedWithQB = 1 and (se.QBListIdForMileage is null or se.QBListIdForOTHours is null or se.QBListIdForRegularHours is null)").ToList();
+            count += dsrs.Count();
 
-            return unsynced.Count();
+            return count; 
         }
         #endregion
 
@@ -443,16 +441,16 @@ namespace QBMigrationTool
             SyncWorkOrders();
             SyncDSRs();
 
-            //int numUnsyncedWorkOrders = GetNumUnsyncedWorkOrders();
-            //int numUnsyncedDSRs = GetNumUnsyncedDSRs();
-            //if (numUnsyncedWorkOrders > 0)
-            //{
-            //    Logging.RototrackErrorLog("There are " + numUnsyncedWorkOrders.ToString() + " Work Orders that failed to sync with QB!");
-            //}
-            //if (numUnsyncedDSRs > 0)
-            //{
-            //    Logging.RototrackErrorLog("There are " + numUnsyncedDSRs.ToString() + " DSRs that failed to sync with QB!");
-            //}
+            int numUnsyncedWorkOrders = GetNumUnsyncedWorkOrders();
+            int numUnsyncedDSRs = GetNumUnsyncedDSRs();
+            if (numUnsyncedWorkOrders > 0)
+            {
+                Logging.RototrackErrorLog("There are " + numUnsyncedWorkOrders.ToString() + " Work Orders that failed to sync with QB!");
+            }
+            if (numUnsyncedDSRs > 0)
+            {
+                Logging.RototrackErrorLog("There are " + numUnsyncedDSRs.ToString() + " DSRs that failed to sync with QB!");
+            }
 
             SyncQBData();
         }
@@ -520,59 +518,61 @@ namespace QBMigrationTool
 
             RotoTrackDb db = new RotoTrackDb();
 
-            List<DSR> dsrList = db.DSRs.Include("ServiceEntryList").Where(f => f.IsSynchronizedWithQB == false).ToList();
-            foreach (DSR dsr in dsrList)
+            int approvedVal = (int)DSRStatus.Approved;
+            List<DSRLite> dsrList = db.DSRs.Where(f => f.IsSynchronizedWithQB == false && f.statusValue == approvedVal).Select(f => new DSRLite { Id = f.Id, WorkOrderId = f.WorkOrderId, WorkOrderGUID = f.WorkOrderGUID, Created = f.Created, Modified = f.Modified, DateWorked = f.DateWorked, TechnicianId = f.TechnicianId, IsSynchronizedWithQB = f.IsSynchronizedWithQB, statusValue = f.statusValue }).ToList();                        
+            foreach (DSRLite dsr in dsrList)
             {
-                if (dsr.Status == DSRStatus.Approved)
+                List<ServiceEntry> serviceEntryList = db.ServiceEntries.Where(f => f.DSRId == dsr.Id).ToList();
+                foreach (ServiceEntry se in serviceEntryList.ToList())
                 {
-                    dsr.IsSynchronizedWithQB = true;
-                    db.Entry(dsr).State = EntityState.Modified;
-                    db.SaveChanges();
-
-                    foreach (ServiceEntry se in dsr.ServiceEntryList.ToList())
+                    ServiceDetail sd = db.ServiceDetails.Find(se.ServiceDetailId);
+                    if (se.QBListIdForMileage == null)
                     {
-                        ServiceDetail sd = db.ServiceDetails.Find(se.ServiceDetailId);
-                        if (se.QBListIdForMileage == null)
+                        if (se.Mileage == 0)
                         {
-                            if (se.Mileage == 0)
-                            {
-                                se.QBListIdForMileage = "N/A";
-                                db.Entry(se).State = EntityState.Modified;
-                                db.SaveChanges();
-                            }
-                            else
-                            {                                
-                                AddVehicleMileage(se.Id, se.ServiceDetailId);
-                            }
+                            se.QBListIdForMileage = "N/A";
+                            db.Entry(se).State = EntityState.Modified;
+                            db.SaveChanges();
                         }
-                        if (se.QBListIdForRegularHours == null)
+                        else
                         {
-                            if (se.RegularHours == 0)
-                            {
-                                se.QBListIdForRegularHours = "N/A";
-                                db.Entry(se).State = EntityState.Modified;
-                                db.SaveChanges();
-                            }
-                            else
-                            {                             
-                                AddTimeTracking(se.Id, se.ServiceDetailId, sd.ServiceTypeId, se.RegularHours);
-                            }
+                            AddVehicleMileage(se.Id, se.ServiceDetailId);
                         }
-                        if (se.QBListIdForOTHours == null)
+                    }
+                    if (se.QBListIdForRegularHours == null)
+                    {
+                        if (se.RegularHours == 0)
                         {
-                            if (se.OTHours == 0)
-                            {
-                                se.QBListIdForOTHours = "N/A";
-                                db.Entry(se).State = EntityState.Modified;
-                                db.SaveChanges();
-                            }
-                            else
-                            {                             
-                                AddTimeTracking(se.Id, se.ServiceDetailId, sd.OTServiceTypeId, se.OTHours);
-                            }
+                            se.QBListIdForRegularHours = "N/A";
+                            db.Entry(se).State = EntityState.Modified;
+                            db.SaveChanges();
+                        }
+                        else
+                        {
+                            AddTimeTracking(se.Id, se.ServiceDetailId, sd.ServiceTypeId, se.RegularHours);
+                        }
+                    }
+                    if (se.QBListIdForOTHours == null)
+                    {
+                        if (se.OTHours == 0)
+                        {
+                            se.QBListIdForOTHours = "N/A";
+                            db.Entry(se).State = EntityState.Modified;
+                            db.SaveChanges();
+                        }
+                        else
+                        {
+                            AddTimeTracking(se.Id, se.ServiceDetailId, sd.OTServiceTypeId, se.OTHours);
                         }
                     }
                 }
+
+                // Update status of DSR
+                DSR dsrToUpdate = db.DSRs.Find(dsr.Id);
+                dsrToUpdate.IsSynchronizedWithQB = true;
+                db.Entry(dsrToUpdate).State = EntityState.Modified;
+                db.SaveChanges();
+
             }
 
             AppendStatus("Done");

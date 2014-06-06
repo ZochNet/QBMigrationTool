@@ -152,6 +152,7 @@
     <Compile Include="ClassDAL.cs" />
     <Compile Include="CustomerDAL.cs" />
     <Compile Include="CustomerTypeDAL.cs" />
+    <Compile Include="DSRLite.cs" />
     <Compile Include="EmployeeDAL.cs" />
     <Compile Include="ItemDAL.cs" />
     <Compile Include="InvoiceDAL.cs" />
