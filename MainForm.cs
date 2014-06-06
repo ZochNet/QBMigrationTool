@@ -75,7 +75,7 @@ namespace QBMigrationTool
 
             labelBuildType.Text = RototrackConfig.GetBuildType();
             //aTimer = new System.Timers.Timer(10000);
-            aTimer = new System.Timers.Timer((double)numericUpDownSyncDuration.Value * 100000);
+            aTimer = new System.Timers.Timer((double)numericUpDownSyncDuration.Value * 60.0 * 1000.0);
             aTimer.Elapsed += aTimer_Elapsed;
 		}
         
@@ -718,7 +718,7 @@ namespace QBMigrationTool
             }
             else
             {
-                aTimer.Interval = (double)numericUpDownSyncDuration.Value * 100000;
+                aTimer.Interval = (double)numericUpDownSyncDuration.Value * 60.0 * 1000.0;
                 btnSyncNow.Enabled = false;
                 numericUpDownSyncDuration.Enabled = false;                
                 btnAutoSync.Text = "Disable Sync";
