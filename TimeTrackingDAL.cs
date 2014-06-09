@@ -90,8 +90,8 @@ namespace QBMigrationTool
             catch (Exception e)
             {
                 string evLogTxt = "";
-                evLogTxt = "Error building time tracking add request! " + e.Message + "\r\n";                
-                Logging.RototrackErrorLog(evLogTxt);
+                evLogTxt = "Error building time tracking add request! " + e.Message + "\r\n";
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + evLogTxt);
                 return null;
             }
         }
@@ -385,7 +385,7 @@ namespace QBMigrationTool
             }
             catch (Exception e)
             {
-                Logging.RototrackErrorLog(e.ToString());
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + e.ToString());
             }
 
             return hrsMins;

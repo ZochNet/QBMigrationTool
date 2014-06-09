@@ -429,6 +429,34 @@ namespace QBMigrationTool
 
             return count; 
         }
+
+        private void SetMileageToNA(int seID)
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            ServiceEntry se = db.ServiceEntries.Find(seID);
+            se.QBListIdForMileage = "N/A";
+            db.Entry(se).State = EntityState.Modified;
+            db.SaveChanges();
+        }
+
+        private void SetRegularHoursToNA(int seID)
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            ServiceEntry se = db.ServiceEntries.Find(seID);
+            se.QBListIdForRegularHours = "N/A";
+            db.Entry(se).State = EntityState.Modified;
+            db.SaveChanges();
+        }
+
+        private void SetOTHoursToNA(int seID)
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            ServiceEntry se = db.ServiceEntries.Find(seID);
+            se.QBListIdForOTHours = "N/A";
+            db.Entry(se).State = EntityState.Modified;
+            db.SaveChanges();
+        }
+
         #endregion
 
         #region Main Sync Functions
@@ -443,11 +471,11 @@ namespace QBMigrationTool
             int numUnsyncedDSRs = GetNumUnsyncedDSRs();
             if (numUnsyncedWorkOrders > 0)
             {
-                Logging.RototrackErrorLog("There are " + numUnsyncedWorkOrders.ToString() + " Work Orders that failed to sync with QB!");
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "There are " + numUnsyncedWorkOrders.ToString() + " Work Orders that failed to sync with QB!");
             }
             if (numUnsyncedDSRs > 0)
             {
-                Logging.RototrackErrorLog("There are " + numUnsyncedDSRs.ToString() + " DSRs that failed to sync with QB!");
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "There are " + numUnsyncedDSRs.ToString() + " DSRs that failed to sync with QB!");
             }
 
             SyncQBData();
@@ -531,9 +559,7 @@ namespace QBMigrationTool
                     {
                         if (se.Mileage == 0)
                         {
-                            se.QBListIdForMileage = "N/A";
-                            db.Entry(se).State = EntityState.Modified;
-                            db.SaveChanges();
+                            SetMileageToNA(se.Id);
                         }
                         else
                         {
@@ -544,9 +570,7 @@ namespace QBMigrationTool
                     {
                         if (se.RegularHours == 0)
                         {
-                            se.QBListIdForRegularHours = "N/A";
-                            db.Entry(se).State = EntityState.Modified;
-                            db.SaveChanges();
+                            SetRegularHoursToNA(se.Id);
                         }
                         else
                         {
@@ -557,9 +581,7 @@ namespace QBMigrationTool
                     {
                         if (se.OTHours == 0)
                         {
-                            se.QBListIdForOTHours = "N/A";
-                            db.Entry(se).State = EntityState.Modified;
-                            db.SaveChanges();
+                            SetOTHoursToNA(se.Id);
                         }
                         else
                         {

@@ -96,8 +96,8 @@ namespace QBMigrationTool
             catch (Exception e)
             {
                 string evLogTxt = "";
-                evLogTxt = "Error building vehicle mileage add request! " + e.Message + "\r\n";                
-                Logging.RototrackErrorLog(evLogTxt);
+                evLogTxt = "Error building vehicle mileage add request! " + e.Message + "\r\n";
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + evLogTxt);
                 return null;
             }
         }

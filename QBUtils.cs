@@ -34,13 +34,13 @@ namespace QBMigrationTool
 
                     if (errorOccurred)
                     {
-                        Logging.RototrackErrorLog("QBMigrationTool: DoRequest Retry succeeded.");
+                        Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "DoRequest Retry succeeded.");
                         errorOccurred = false;
                     }
                 }
-                catch (System.Runtime.InteropServices.COMException)
+                catch (System.Runtime.InteropServices.COMException e)
                 {
-                    Logging.RototrackErrorLog("QBMigrationTool:  Error in DoRequest.  Retrying...");
+                    Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Error in DoRequest.  Retrying.  Details: " +e.ToString());
                     errorOccurred = true;
                 }
                 finally
@@ -107,7 +107,7 @@ namespace QBMigrationTool
         {
             if (Convert.ToInt32(statusCode) != 0)
             {
-                Logging.RototrackErrorLog("QBMigrationTool Error: " + statusMessage);
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Error: " + statusMessage);
             }
         }
     }

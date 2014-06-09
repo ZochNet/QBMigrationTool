@@ -148,7 +148,7 @@ namespace QBMigrationTool
             }
             else
             {
-                Logging.RototrackErrorLog("Could not find the default " + areaInitials + " area!");
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Could not find the default " + areaInitials + " area!");
             }
 
             XmlNodeList DataExtRetList = EmployeeRet.SelectNodes("./DataExtRet");
@@ -265,8 +265,8 @@ namespace QBMigrationTool
                     catch (Exception e)
                     {
                         string evLogTxt = "";
-                        evLogTxt = "Error creating a new user! " + e.Message + "\r\n";                        
-                        Logging.RototrackErrorLog(evLogTxt);
+                        evLogTxt = "Error creating a new user! " + e.Message + "\r\n";
+                        Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + evLogTxt);
                     }
                 }
             }
