@@ -2,15 +2,89 @@
 using rototrack_model;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using zochnet_utils;
 
 namespace QBMigrationTool
 {
     public class BillDAL
     {
+        // This method will look at all BillLines modified within the last 180 days (created or changed), and then look at all
+        // BillLines in the database that were modified in that same timer period.  If any exist in the database, but not in the list from QB,
+        // then it must have been deleted from QuickBooks, so delete it from our database.
+        public static void RemoveDeleted()
+        {
+            RotoTrackDb db = new RotoTrackDb();
+
+            string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -180, false);
+            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);
+            
+            List<BillLine> bls = db.BillLines.ToList();
+            XmlDocument doc = BuildQueryRequest(fromDateTime, toDateTime, bls);
+            string response = QBUtils.DoRequest(doc);
+            RemoveDeletedBasedOnResponse(db, fromDateTime, response, bls);              
+        }
+
+        private static void RemoveDeletedBasedOnResponse(RotoTrackDb db, string fromDateTime, string response, List<BillLine> bls)
+        {
+            XmlDocument responseXmlDoc = new XmlDocument();
+            responseXmlDoc.LoadXml(response);
+
+            //Get the response for our request
+            XmlNodeList BillQueryRsList = responseXmlDoc.GetElementsByTagName("BillQueryRs");
+            if (BillQueryRsList.Count == 1) //Should always be true since we only did one request in this sample
+            {
+                XmlNode responseNode = BillQueryRsList.Item(0);
+                //Check the status code, info, and severity
+                XmlAttributeCollection rsAttributes = responseNode.Attributes;
+                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
+                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                //status code = 0 all OK, > 0 is warning
+                if (Convert.ToInt32(statusCode) >= 0)
+                {
+                    List<string> txnIds = new List<string>();
+                    XmlNodeList BillRetList = responseNode.SelectNodes("//BillRet");//XPath Query
+                    for (int i = 0; i < BillRetList.Count; i++)
+                    {
+                        XmlNode BillRet = BillRetList.Item(i);
+                        if (BillRet != null)
+                        {
+                            string TxnID = BillRet.SelectSingleNode("./TxnID").InnerText;
+                            txnIds.Add(TxnID);
+                        }
+                    }
+
+                    txnIds.Sort();
+                    DateTime fromDate;
+                    if (DateTime.TryParse(fromDateTime, out fromDate))
+                    {
+                        foreach (BillLine bl in bls.ToList())
+                        {
+                            if (!txnIds.Contains(bl.BillTxnId))
+                            {
+                                if (bl.BillModified >= fromDate)
+                                {
+                                    if (!bl.WorkOrderListID.Contains("_deleted"))
+                                    {
+                                        Logging.RototrackErrorLog("Update WorkOrderListID to _deleted for Bill Lines with  BillTxnID: " + bl.BillTxnId);
+                                        bl.WorkOrderListID = bl.WorkOrderListID + "_deleted";
+                                        db.Entry(bl).State = EntityState.Modified;
+                                        db.SaveChanges();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }                        
+        }
+
         public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate)
         {
             XmlDocument doc = XmlUtils.MakeRequestDocument();
@@ -23,6 +97,31 @@ namespace QBMigrationTool
             dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
             dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));                        
             queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "IncludeLineItems", "1"));
+
+            return doc;
+        }
+
+        public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate, List<BillLine> bls)
+        {
+            XmlDocument doc = XmlUtils.MakeRequestDocument();
+            XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
+            XmlElement queryElement = doc.CreateElement("BillQueryRq");
+            parent.AppendChild(queryElement);
+
+            /*
+            XmlElement dateRangeFilter = doc.CreateElement("TxnDateRangeFilter");
+            queryElement.AppendChild(dateRangeFilter);
+            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromTxnDate", fromModifiedDate));
+            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToTxnDate", toModifiedDate)); 
+            //dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "DateMacro", "LastCalendarYearToDate"));            
+            */
+
+            XmlElement dateRangeFilter = doc.CreateElement("ModifiedDateRangeFilter");
+            queryElement.AppendChild(dateRangeFilter);
+            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
+            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate)); 
+
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "IncludeRetElement", "TxnID"));
 
             return doc;
         }

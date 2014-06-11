@@ -11,6 +11,11 @@ namespace QBMigrationTool
 {
     public class InvoiceDAL
     {
+        public static void RemoveDeleted()
+        {
+            throw new NotImplementedException();
+        }
+
         public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate)
         {
             XmlDocument doc = XmlUtils.MakeRequestDocument();
@@ -1270,5 +1275,6 @@ namespace QBMigrationTool
             
             return o;
         }
+
     }
 }

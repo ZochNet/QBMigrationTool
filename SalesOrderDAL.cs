@@ -11,6 +11,11 @@ namespace QBMigrationTool
 {
     public class SalesOrderDAL
     {
+        public static void RemoveDeleted()
+        {
+            throw new NotImplementedException();
+        }
+
         public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate)
         {
             XmlDocument doc = XmlUtils.MakeRequestDocument();
