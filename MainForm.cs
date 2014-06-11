@@ -77,6 +77,9 @@ namespace QBMigrationTool
             //aTimer = new System.Timers.Timer(10000);
             aTimer = new System.Timers.Timer((double)numericUpDownSyncDuration.Value * 60.0 * 1000.0);
             aTimer.Elapsed += aTimer_Elapsed;
+
+            // Initialize web security for creating users
+            RotoTrackDbUtils.InitializeWebSecurityIfNotAlready();
 		}
         
 		/// <summary>
@@ -698,7 +701,7 @@ namespace QBMigrationTool
             BillDAL.HandleResponse(response);
             AppendStatus("Done" + Environment.NewLine);
             AppendStatus("Removing deleted objects...");
-            BillDAL.RemoveDeleted();
+            //BillDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
 
             AppendStatus("Sync Sales Orders...");              
