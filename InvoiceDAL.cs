@@ -120,6 +120,14 @@ namespace QBMigrationTool
             Invoice invoice = FindOrCreateInvoice(db, TxnID, TimeCreated, TimeModified, EditSequence);
             invoice.WorkOrderListID = WorkOrderListID;
             invoice.AreaListID = AreaListID;
+
+            // Also, set the Work Order status to Invoiced
+            if (db.WorkOrders.Any(f => f.QBListId == WorkOrderListID))
+            {
+                WorkOrder wo = db.WorkOrders.Where(f => f.QBListId == WorkOrderListID).First();
+                wo.Status = WorkOrderStatus.Invoiced;
+            }
+
             db.SaveChanges();
             
             /*
