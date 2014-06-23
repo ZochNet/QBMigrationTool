@@ -464,9 +464,7 @@ namespace QBMigrationTool
 
         #region Main Sync Functions
         private void DoSync()
-        {
-            throw new Exception("Test exception");
-
+        {        
             ClearStatus();
             SetStatus("");
             SyncWorkOrders();
