@@ -465,6 +465,8 @@ namespace QBMigrationTool
         #region Main Sync Functions
         private void DoSync()
         {
+            throw new Exception("Test exception");
+
             ClearStatus();
             SetStatus("");
             SyncWorkOrders();
@@ -745,7 +747,14 @@ namespace QBMigrationTool
 
         private void btn_SyncNow_Click(object sender, EventArgs e)
         {
-            DoSync();
+            try
+            {
+                DoSync();
+            }
+            catch (Exception ex)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+            }
         }
 
         private void btnAutoSync_Click(object sender, EventArgs e)
@@ -764,7 +773,14 @@ namespace QBMigrationTool
                 numericUpDownSyncDuration.Enabled = false;                
                 btnAutoSync.Text = "Disable Sync";
 
-                DoSync();
+                try
+                {
+                    DoSync();
+                }
+                catch (Exception ex)
+                {
+                    Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+                }
                 aTimer.Enabled = true;
             }            
         }
