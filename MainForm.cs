@@ -732,7 +732,14 @@ namespace QBMigrationTool
         void aTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
             aTimer.Enabled = false;
-            DoSync();
+            try
+            {
+                DoSync();
+            }
+            catch (Exception ex)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+            }
             aTimer.Enabled = true;
         }
 

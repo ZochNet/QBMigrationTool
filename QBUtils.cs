@@ -29,7 +29,8 @@ namespace QBMigrationTool
                     tries++;
                     rp = new RequestProcessor2();
                     rp.OpenConnection("QBMT1", "QBMigrationTool");
-                    ticket = rp.BeginSession("", QBFileMode.qbFileOpenDoNotCare);
+                    ticket = rp.BeginSession("", QBFileMode.qbFileOpenDoNotCare);                    
+                    CheckIfBuildTypeAndQuickBooksFileMatch(rp.GetCurrentCompanyFileName(ticket));
                     response = rp.ProcessRequest(ticket, doc.OuterXml);
 
                     if (errorOccurred)
@@ -40,8 +41,13 @@ namespace QBMigrationTool
                 }
                 catch (System.Runtime.InteropServices.COMException e)
                 {
-                    Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Error in DoRequest.  Retrying.  Details: " +e.ToString());
+                    Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Error in DoRequest.  Retrying.  Details: " + e.ToString());
                     errorOccurred = true;
+                }
+                catch (Exception e)
+                {
+                    Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Error in DoRequest.  Retrying.  Details: " + e.ToString());
+                    break;
                 }
                 finally
                 {
@@ -59,7 +65,7 @@ namespace QBMigrationTool
 
             return response;
         }
-
+        
         public static string DoRequestRaw(string rawXML)
         {
             RequestProcessor2 rp = null;
@@ -70,6 +76,7 @@ namespace QBMigrationTool
                 rp = new RequestProcessor2();
                 rp.OpenConnection("QBMT1", "QBMigrationTool");
                 ticket = rp.BeginSession("", QBFileMode.qbFileOpenDoNotCare);
+                CheckIfBuildTypeAndQuickBooksFileMatch(rp.GetCurrentCompanyFileName(ticket));
                 response = rp.ProcessRequest(ticket, rawXML);
                 return response;
             }
@@ -77,6 +84,11 @@ namespace QBMigrationTool
             {
                 MessageBox.Show("COM Error Description = " + ex.Message, "COM error");
                 return ex.Message;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Error in DoRequestRaw.  Details: " + e.ToString(), "Exception");
+                return e.Message;
             }
             finally
             {
@@ -88,6 +100,25 @@ namespace QBMigrationTool
                 {
                     rp.CloseConnection();
                 }
+            }
+        }
+
+        private static void CheckIfBuildTypeAndQuickBooksFileMatch(string filename)
+        {
+            string buildType = RototrackConfig.GetBuildType();
+            bool validMatch = false;
+            if (filename.Contains("Roto-Versal") && buildType.Contains("ROTO"))
+            {
+                validMatch = true;
+            }
+            else if (filename.Contains("Guardiant") && buildType.Contains("GUARD"))
+            {
+                validMatch = true;
+            }
+
+            if (!validMatch)
+            {
+                throw new Exception("Build type is: " + buildType + " but open Quickbooks file is " + filename + "!");
             }
         }
 
