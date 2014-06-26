@@ -540,6 +540,14 @@ namespace QBMigrationTool
                 UpdateSite(wo.Id);
             }
               
+            // Finally, in case we encounter the quirk where we try to add a work order, but it's already in Quickbooks, let's get the ListID and EditSequence 
+            // from QuickBooks and save it
+            woList = db.WorkOrders.Where(wo => wo.QBListId == null).ToList();
+            foreach (WorkOrder wo in woList)
+            {
+                CustomerDAL.UpdateAlreadyExistingWorkOrder(wo.Id);
+            }
+
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);
         }

@@ -400,6 +400,27 @@ namespace QBMigrationTool
         {
             string ListID = CustomerRet.SelectSingleNode("./EditSequence").InnerText;
             return ListID;
-        }   
+        }
+
+        public static void UpdateAlreadyExistingWorkOrder(int woId)
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            WorkOrder wo = db.WorkOrders.Find(woId);
+
+            if (wo != null)
+            {
+                string response = QBUtils.DoRequest(CustomerDAL.BuildCustomerQueryByWorkorderNum(wo.WorkOrderNumber));
+                string qbid = CustomerDAL.GetQBIDFromResponse(response);
+                string qbes = CustomerDAL.GetQBEditSequenceFromResponse(response);
+                if ((qbid != "") && (qbes != ""))
+                {
+                    wo.QBListId = qbid;
+                    wo.QBEditSequence = qbes;
+                    db.Entry(wo).State = EntityState.Modified;
+                    db.SaveChanges();
+                }
+            }
+        }
+
     }
 }
