@@ -12,79 +12,25 @@ using zochnet_utils;
 namespace QBMigrationTool
 {
     public class BillDAL
-    {
-        // This method will look at all BillLines modified within the last 180 days (created or changed), and then look at all
-        // BillLines in the database that were modified in that same timer period.  If any exist in the database, but not in the list from QB,
-        // then it must have been deleted from QuickBooks, so delete it from our database.
+    {        
         public static void RemoveDeleted()
         {
-            RotoTrackDb db = new RotoTrackDb();
-
-            string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), -180, false);
-            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);
-            
-            List<BillLine> bls = db.BillLines.ToList();
-            XmlDocument doc = BuildQueryRequest(fromDateTime, toDateTime, bls);
+            XmlDocument doc = BuildDeletedRequest();
             string response = QBUtils.DoRequest(doc);
-            RemoveDeletedBasedOnResponse(db, fromDateTime, response, bls);              
+            HandleDeletedResponse(response);
         }
 
-        private static void RemoveDeletedBasedOnResponse(RotoTrackDb db, string fromDateTime, string response, List<BillLine> bls)
+        public static XmlDocument BuildDeletedRequest()
         {
-            XmlDocument responseXmlDoc = new XmlDocument();
-            responseXmlDoc.LoadXml(response);
+            XmlDocument doc = XmlUtils.MakeRequestDocument();
+            XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
+            XmlElement TxnDeletedQueryRq = doc.CreateElement("TxnDeletedQueryRq");
+            parent.AppendChild(TxnDeletedQueryRq);
+            TxnDeletedQueryRq.AppendChild(XmlUtils.MakeSimpleElem(doc, "TxnDelType", "Bill"));
 
-            //Get the response for our request
-            XmlNodeList BillQueryRsList = responseXmlDoc.GetElementsByTagName("BillQueryRs");
-            if (BillQueryRsList.Count == 1) //Should always be true since we only did one request in this sample
-            {
-                XmlNode responseNode = BillQueryRsList.Item(0);
-                //Check the status code, info, and severity
-                XmlAttributeCollection rsAttributes = responseNode.Attributes;
-                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
-                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
-                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
-
-                //status code = 0 all OK, > 0 is warning
-                if (Convert.ToInt32(statusCode) >= 0)
-                {
-                    List<string> txnIds = new List<string>();
-                    XmlNodeList BillRetList = responseNode.SelectNodes("//BillRet");//XPath Query
-                    for (int i = 0; i < BillRetList.Count; i++)
-                    {
-                        XmlNode BillRet = BillRetList.Item(i);
-                        if (BillRet != null)
-                        {
-                            string TxnID = BillRet.SelectSingleNode("./TxnID").InnerText;
-                            txnIds.Add(TxnID);
-                        }
-                    }
-
-                    txnIds.Sort();
-                    DateTime fromDate;
-                    if (DateTime.TryParse(fromDateTime, out fromDate))
-                    {
-                        foreach (BillLine bl in bls.ToList())
-                        {
-                            if (!txnIds.Contains(bl.BillTxnId))
-                            {
-                                if (bl.BillModified >= fromDate)
-                                {
-                                    if (!bl.WorkOrderListID.Contains("_deleted"))
-                                    {
-                                        Logging.RototrackErrorLog("Update WorkOrderListID to _deleted for Bill Lines with  BillTxnID: " + bl.BillTxnId);
-                                        bl.WorkOrderListID = bl.WorkOrderListID + "_deleted";
-                                        db.Entry(bl).State = EntityState.Modified;
-                                        db.SaveChanges();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }                        
+            return doc;
         }
-
+        
         public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate)
         {
             XmlDocument doc = XmlUtils.MakeRequestDocument();
@@ -101,34 +47,73 @@ namespace QBMigrationTool
             return doc;
         }
 
-        public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate, List<BillLine> bls)
+        public static void HandleDeletedResponse(string response)
         {
-            XmlDocument doc = XmlUtils.MakeRequestDocument();
-            XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
-            XmlElement queryElement = doc.CreateElement("BillQueryRq");
-            parent.AppendChild(queryElement);
-
-            /*
-            XmlElement dateRangeFilter = doc.CreateElement("TxnDateRangeFilter");
-            queryElement.AppendChild(dateRangeFilter);
-            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromTxnDate", fromModifiedDate));
-            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToTxnDate", toModifiedDate)); 
-            //dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "DateMacro", "LastCalendarYearToDate"));            
-            */
-
-            XmlElement dateRangeFilter = doc.CreateElement("ModifiedDateRangeFilter");
-            queryElement.AppendChild(dateRangeFilter);
-            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
-            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate)); 
-
-            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "IncludeRetElement", "TxnID"));
-
-            return doc;
+            WalkTxnDeletedQueryRs(response);
         }
-
+        
         public static void HandleResponse(string response)
         {
             WalkBillQueryRs(response);
+        }
+
+        public static void WalkTxnDeletedQueryRs(string response)
+        {
+            //Parse the response XML string into an XmlDocument
+            XmlDocument responseXmlDoc = new XmlDocument();
+            responseXmlDoc.LoadXml(response);
+
+            //Get the response for our request
+            XmlNodeList TxnDeletedQueryRsList = responseXmlDoc.GetElementsByTagName("TxnDeletedQueryRs");
+            if (TxnDeletedQueryRsList.Count == 1) //Should always be true since we only did one request in this sample
+            {
+                XmlNode responseNode = TxnDeletedQueryRsList.Item(0);
+                //Check the status code, info, and severity
+                XmlAttributeCollection rsAttributes = responseNode.Attributes;
+                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
+                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                //status code = 0 all OK, > 0 is warning
+                if (Convert.ToInt32(statusCode) >= 0)
+                {
+                    XmlNodeList TxnDeletedRetList = responseNode.SelectNodes("//TxnDeletedRet");//XPath Query
+                    for (int i = 0; i < TxnDeletedRetList.Count; i++)
+                    {
+                        XmlNode TxnDeletedRet = TxnDeletedRetList.Item(i);
+                        WalkTxnDeletedRet(TxnDeletedRet);
+                    }
+                }
+            }
+        }
+
+        private static void WalkTxnDeletedRet(XmlNode TxnDeletedRet)
+        {
+            if (TxnDeletedRet == null) return;
+
+            //Go through all the elements of TxnDeletedRet
+            //Get value of TxnDelType
+            string TxnDelType = TxnDeletedRet.SelectSingleNode("./TxnDelType").InnerText;
+            //Get value of TxnID
+            string TxnID = TxnDeletedRet.SelectSingleNode("./TxnID").InnerText;
+            //Get value of TimeCreated
+            string TimeCreated = TxnDeletedRet.SelectSingleNode("./TimeCreated").InnerText;
+            //Get value of TimeDeleted
+            string TimeDeleted = TxnDeletedRet.SelectSingleNode("./TimeDeleted").InnerText;
+            //Get value of RefNumber
+            if (TxnDeletedRet.SelectSingleNode("./RefNumber") != null)
+            {
+                string RefNumber = TxnDeletedRet.SelectSingleNode("./RefNumber").InnerText;
+            }
+
+            RotoTrackDb db = new RotoTrackDb();
+            List<BillLine> blList = db.BillLines.Where(f => f.BillTxnId == TxnID).ToList();
+            foreach (BillLine bl in blList.ToList())
+            {
+                db.BillLines.Remove(bl);
+            }
+            db.SaveChanges();
+
         }
 
         private static void WalkBillQueryRs(string response)

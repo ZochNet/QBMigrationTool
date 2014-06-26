@@ -700,8 +700,8 @@ namespace QBMigrationTool
             AppendStatus("Done" + Environment.NewLine + "Processing...");
             BillDAL.HandleResponse(response);
             AppendStatus("Done" + Environment.NewLine);
-            AppendStatus("Removing deleted objects...");
-            //BillDAL.RemoveDeleted();
+            AppendStatus("Removing deleted Bills...");
+            BillDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
 
             AppendStatus("Sync Sales Orders...");              
@@ -710,8 +710,8 @@ namespace QBMigrationTool
             AppendStatus("Done" + Environment.NewLine + "Processing...");
             SalesOrderDAL.HandleResponse(response);
             AppendStatus("Done" + Environment.NewLine);
-            AppendStatus("Removing deleted objects...");
-            //SalesOrderDAL.RemoveDeleted();
+            AppendStatus("Removing deleted Sales Orders...");
+            SalesOrderDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
 
             AppendStatus("Sync Invoices...");              
@@ -720,8 +720,8 @@ namespace QBMigrationTool
             AppendStatus("Done" + Environment.NewLine + "Processing...");
             InvoiceDAL.HandleResponse(response);
             AppendStatus("Done" + Environment.NewLine);
-            AppendStatus("Removing deleted objects...");
-            //InvoiceDAL.RemoveDeleted();
+            AppendStatus("Removing deleted Invoices...");
+            InvoiceDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
             
             AppConfig.SetLastSyncTime(DateTime.Now);

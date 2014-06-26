@@ -13,7 +13,20 @@ namespace QBMigrationTool
     {
         public static void RemoveDeleted()
         {
-            throw new NotImplementedException();
+            XmlDocument doc = BuildDeletedRequest();
+            string response = QBUtils.DoRequest(doc);
+            HandleDeletedResponse(response);
+        }
+
+        public static XmlDocument BuildDeletedRequest()
+        {
+            XmlDocument doc = XmlUtils.MakeRequestDocument();
+            XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
+            XmlElement TxnDeletedQueryRq = doc.CreateElement("TxnDeletedQueryRq");
+            parent.AppendChild(TxnDeletedQueryRq);
+            TxnDeletedQueryRq.AppendChild(XmlUtils.MakeSimpleElem(doc, "TxnDelType", "Invoice"));
+
+            return doc;
         }
 
         public static XmlDocument BuildQueryRequest(string fromModifiedDate, string toModifiedDate)
@@ -31,9 +44,72 @@ namespace QBMigrationTool
             return doc;
         }
 
+        public static void HandleDeletedResponse(string response)
+        {
+            WalkTxnDeletedQueryRs(response);
+        }
+
         public static void HandleResponse(string response)
         {
             WalkInvoiceQueryRs(response);
+        }
+
+        public static void WalkTxnDeletedQueryRs(string response)
+        {
+            //Parse the response XML string into an XmlDocument
+            XmlDocument responseXmlDoc = new XmlDocument();
+            responseXmlDoc.LoadXml(response);
+
+            //Get the response for our request
+            XmlNodeList TxnDeletedQueryRsList = responseXmlDoc.GetElementsByTagName("TxnDeletedQueryRs");
+            if (TxnDeletedQueryRsList.Count == 1) //Should always be true since we only did one request in this sample
+            {
+                XmlNode responseNode = TxnDeletedQueryRsList.Item(0);
+                //Check the status code, info, and severity
+                XmlAttributeCollection rsAttributes = responseNode.Attributes;
+                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
+                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                //status code = 0 all OK, > 0 is warning
+                if (Convert.ToInt32(statusCode) >= 0)
+                {
+                    XmlNodeList TxnDeletedRetList = responseNode.SelectNodes("//TxnDeletedRet");//XPath Query
+                    for (int i = 0; i < TxnDeletedRetList.Count; i++)
+                    {
+                        XmlNode TxnDeletedRet = TxnDeletedRetList.Item(i);
+                        WalkTxnDeletedRet(TxnDeletedRet);
+                    }
+                }
+            }
+        }
+
+        private static void WalkTxnDeletedRet(XmlNode TxnDeletedRet)
+        {
+            if (TxnDeletedRet == null) return;
+
+            //Go through all the elements of TxnDeletedRet
+            //Get value of TxnDelType
+            string TxnDelType = TxnDeletedRet.SelectSingleNode("./TxnDelType").InnerText;
+            //Get value of TxnID
+            string TxnID = TxnDeletedRet.SelectSingleNode("./TxnID").InnerText;
+            //Get value of TimeCreated
+            string TimeCreated = TxnDeletedRet.SelectSingleNode("./TimeCreated").InnerText;
+            //Get value of TimeDeleted
+            string TimeDeleted = TxnDeletedRet.SelectSingleNode("./TimeDeleted").InnerText;
+            //Get value of RefNumber
+            if (TxnDeletedRet.SelectSingleNode("./RefNumber") != null)
+            {
+                string RefNumber = TxnDeletedRet.SelectSingleNode("./RefNumber").InnerText;
+            }
+
+            RotoTrackDb db = new RotoTrackDb();
+            List<Invoice> invoiceList = db.Invoices.Where(f => f.TxnId == TxnID).ToList();
+            foreach (Invoice invoice in invoiceList.ToList())
+            {
+                db.Invoices.Remove(invoice);
+            }
+            db.SaveChanges();
         }
 
         public static void WalkInvoiceQueryRs(string response)
