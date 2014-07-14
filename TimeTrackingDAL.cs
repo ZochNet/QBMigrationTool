@@ -96,6 +96,19 @@ namespace QBMigrationTool
             }
         }
 
+        public static XmlDocument BuildRemoveRq(string TxnID)
+        {
+            XmlDocument doc = XmlUtils.MakeRequestDocument();
+            XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
+            XmlElement queryElement = doc.CreateElement("TxnDelRq");
+            parent.AppendChild(queryElement);
+
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "TxnDelType", "TimeTracking"));
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "TxnID", TxnID));            
+
+            return doc;
+        }
+
         public static void HandleResponse(string response)
         {
             WalkTimeTrackingQueryRs(response);
@@ -104,6 +117,11 @@ namespace QBMigrationTool
         public static void HandleAddResponse(string response)
         {
             WalkTimeTrackingAddRs(response);
+        }
+
+        public static bool HandleRemoveResponse(string response)
+        {
+            return WalkTimeTrackingRemoveRs(response);
         }
 
         private static void WalkTimeTrackingQueryRs(string response)
@@ -334,6 +352,37 @@ namespace QBMigrationTool
                     }
                 }
             }
+        }
+
+        private static bool WalkTimeTrackingRemoveRs(string response)
+        {
+            //Parse the response XML string into an XmlDocument
+            XmlDocument responseXmlDoc = new XmlDocument();
+            responseXmlDoc.LoadXml(response);
+
+            //Get the response for our request
+            XmlNodeList TxnDelRsList = responseXmlDoc.GetElementsByTagName("TxnDelRs");
+            if (TxnDelRsList.Count == 1) //Should always be true since we only did one request in this sample
+            {
+                XmlNode responseNode = TxnDelRsList.Item(0);
+                //Check the status code, info, and severity
+                XmlAttributeCollection rsAttributes = responseNode.Attributes;
+                string statusCode = rsAttributes.GetNamedItem("statusCode").Value;
+                string statusSeverity = rsAttributes.GetNamedItem("statusSeverity").Value;
+                string statusMessage = rsAttributes.GetNamedItem("statusMessage").Value;
+
+                //status code = 0 all OK, > 0 is warning
+                if (Convert.ToInt32(statusCode) == 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return false;
         }
 
         public class HoursMinutes

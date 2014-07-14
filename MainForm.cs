@@ -52,6 +52,7 @@ namespace QBMigrationTool
         private Label label5;
         private Button btnSyncNow;
         private Label label1;
+        private Button buttonSyncWorkOrders;
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
@@ -79,7 +80,15 @@ namespace QBMigrationTool
             aTimer.Elapsed += aTimer_Elapsed;
 
             // Initialize web security for creating users
-            RotoTrackDbUtils.InitializeWebSecurityIfNotAlready();
+            try
+            {
+                RotoTrackDbUtils.InitializeWebSecurityIfNotAlready();                
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Unable to access database.  Application will now exit.  Please make sure the database is accessible and try again.");
+                throw(e);
+            }                        
 		}
         
 		/// <summary>
@@ -99,7 +108,17 @@ namespace QBMigrationTool
 
 		static void Main() 
 		{
-			Application.Run(new MainForm());
+            MainForm mf = null;
+            try
+            {
+                mf = new MainForm();
+                Application.Run(mf);
+            }
+            catch (Exception)
+            {
+                Application.ExitThread();
+            }
+            			
 		}
         #endregion
 
@@ -125,6 +144,7 @@ namespace QBMigrationTool
             this.label5 = new System.Windows.Forms.Label();
             this.btnSyncNow = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
+            this.buttonSyncWorkOrders = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownSyncDuration)).BeginInit();
             this.SuspendLayout();
             // 
@@ -259,10 +279,21 @@ namespace QBMigrationTool
             this.label1.TabIndex = 33;
             this.label1.Text = "Build Type: ";
             // 
+            // buttonSyncWorkOrders
+            // 
+            this.buttonSyncWorkOrders.Location = new System.Drawing.Point(120, 37);
+            this.buttonSyncWorkOrders.Name = "buttonSyncWorkOrders";
+            this.buttonSyncWorkOrders.Size = new System.Drawing.Size(75, 23);
+            this.buttonSyncWorkOrders.TabIndex = 34;
+            this.buttonSyncWorkOrders.Text = "Sync WOs";
+            this.buttonSyncWorkOrders.UseVisualStyleBackColor = true;
+            this.buttonSyncWorkOrders.Click += new System.EventHandler(this.buttonSyncWorkOrders_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(801, 794);
+            this.Controls.Add(this.buttonSyncWorkOrders);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnSyncNow);
             this.Controls.Add(this.label5);
@@ -398,6 +429,26 @@ namespace QBMigrationTool
             }
         }
 
+        private bool RemoveTimeTracking(int ttID)
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            DeletedTimeTracking tt = db.DeletedTimeTrackings.Find(ttID);
+
+            XmlDocument doc = TimeTrackingDAL.BuildRemoveRq(tt.QBTxnId);
+            string response = QBUtils.DoRequest(doc);
+            return TimeTrackingDAL.HandleRemoveResponse(response);
+        }
+
+        private bool RemoveVehicleMileage(int mtID)
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            DeletedMileageTracking mt = db.DeletedMileageTrackings.Find(mtID);
+
+            XmlDocument doc = VehicleMileageDAL.BuildRemoveRq(mt.QBTxnId);
+            string response = QBUtils.DoRequest(doc);
+            return VehicleMileageDAL.HandleRemoveResponse(response);
+        }
+
         private string SyncDataHelper(XmlDocument doc)
         {                      
             string response = QBUtils.DoRequest(doc);
@@ -464,11 +515,28 @@ namespace QBMigrationTool
 
         #region Main Sync Functions
         private void DoSync()
-        {        
+        {
+            DateTime nowTime = DateTime.Now;
+            string dayOfWeek = nowTime.DayOfWeek.ToString();
+            DateTime startTime = DateTime.Today.AddHours(18).AddMinutes(45);
+            DateTime endTime = DateTime.Today.AddHours(21).AddMinutes(15);
+            
             ClearStatus();
             SetStatus("");
+
+            //AppendStatus(dayOfWeek);
+            AppendStatus("NOTE: Sync is disabled on Thursdays from " + startTime.ToString() + " to " + endTime.ToString());
+            AppendStatus(Environment.NewLine);
+            if (dayOfWeek == "Thursday" && nowTime > startTime && nowTime < endTime)
+            {
+                AppendStatus("Sync is disabled on Thursdays from " + startTime.ToString() + " to " + endTime.ToString());
+                AppendStatus(Environment.NewLine);
+                return;
+            }
+            
             SyncWorkOrders();
             SyncDSRs();
+            RemoveDSRTimeAndMileage();
 
             int numUnsyncedWorkOrders = GetNumUnsyncedWorkOrders();
             int numUnsyncedDSRs = GetNumUnsyncedDSRs();
@@ -607,6 +675,38 @@ namespace QBMigrationTool
                 db.Entry(dsrToUpdate).State = EntityState.Modified;
                 db.SaveChanges();
 
+            }
+
+            AppendStatus("Done");
+            AppendStatus(Environment.NewLine);
+        }
+
+        private void RemoveDSRTimeAndMileage()
+        {
+            AppendStatus("Removing Deleted DSR Time and Mileage...");
+
+            RotoTrackDb db = new RotoTrackDb();
+
+            List<DeletedTimeTracking> deletedTimeList = db.DeletedTimeTrackings.Where(f => f.IsSynchronizedWithQB == false).ToList();
+            foreach (DeletedTimeTracking deletedTime in deletedTimeList)
+            {
+                if (RemoveTimeTracking(deletedTime.Id))
+                {
+                    deletedTime.IsSynchronizedWithQB = true;
+                    db.Entry(deletedTime).State = EntityState.Modified;
+                    db.SaveChanges();
+                }
+            }
+
+            List<DeletedMileageTracking> deletedMileageList = db.DeletedMileageTrackings.Where(f => f.IsSynchronizedWithQB == false).ToList();
+            foreach (DeletedMileageTracking deletedMileage in deletedMileageList)
+            {
+                if (RemoveVehicleMileage(deletedMileage.Id))
+                {
+                    deletedMileage.IsSynchronizedWithQB = true;
+                    db.Entry(deletedMileage).State = EntityState.Modified;
+                    db.SaveChanges();
+                }
             }
 
             AppendStatus("Done");
@@ -852,6 +952,19 @@ namespace QBMigrationTool
             this.Close();
         }
         #endregion
+
+        private void buttonSyncWorkOrders_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ClearStatus();
+                SyncWorkOrders();
+            }
+            catch (Exception ex)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+            }
+        }
 
     }
 }
