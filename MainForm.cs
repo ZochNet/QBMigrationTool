@@ -70,7 +70,7 @@ namespace QBMigrationTool
 			//
 			// TODO: Add any constructor code after InitializeComponent call
 			//
-            numericUpDownSyncDuration.Value = 3;
+            numericUpDownSyncDuration.Value = 10;
             numericUpDownSyncDuration.Maximum = 30;
             numericUpDownSyncDuration.Minimum = 1;
 
