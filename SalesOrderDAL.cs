@@ -152,6 +152,10 @@ namespace QBMigrationTool
             //Go through all the elements of SalesOrderRet
             //Get value of TxnID
             string TxnID = SalesOrderRet.SelectSingleNode("./TxnID").InnerText;
+
+            // New or modified objects will return all current line items, so remove any existing ones first and then recreate them.
+            RemoveExistingLineItems(db, TxnID);
+
             //Get value of TimeCreated
             string TimeCreated = SalesOrderRet.SelectSingleNode("./TimeCreated").InnerText;
             //Get value of TimeModified
@@ -1122,6 +1126,16 @@ namespace QBMigrationTool
                     }
                 }
             }
+        }
+
+        private static void RemoveExistingLineItems(RotoTrackDb db, string TxnID)
+        {
+            List<SalesOrderLine> solList = db.SalesOrderLines.Where(f => f.SalesOrderTxnId == TxnID).ToList();
+            foreach (SalesOrderLine sol in solList.ToList())
+            {
+                db.SalesOrderLines.Remove(sol);
+            }
+            db.SaveChanges();
         }
 
         private static SalesOrderLine FindOrCreateSalesOrderLine(RotoTrackDb db, string TxnLineID, string TxnID, string TimeCreated, string TimeModified, string EditSequence, string TxnDate, string AmountDue, string IsManuallyClosed, string IsFullyInvoiced)
