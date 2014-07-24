@@ -388,7 +388,15 @@ namespace QBMigrationTool
 
             XmlDocument doc = WorkOrderDAL.BuildModRq(wo);
             string response = QBUtils.DoRequest(doc);
-            WorkOrderDAL.HandleModResponse(response);
+            bool status = WorkOrderDAL.HandleModResponse(response);
+
+            if (!status)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Failed to update work order for WO#: " + wo.WorkOrderNumber + "ES: " + wo.QBEditSequence + ".  Setting NeedToUpdateQB flag to true to try again.");
+                wo.NeedToUpdateQB = true;
+                db.Entry(wo).State = EntityState.Modified;
+                db.SaveChanges();
+            }
         }
 
         private void UpdateSite(int woID)
@@ -402,7 +410,7 @@ namespace QBMigrationTool
 
             if (!status)
             {
-                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Failed to update site for WO#: " + wo.WorkOrderNumber + ".  Setting NeedToUpdateQB flag to true to try again.");
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Failed to update site for WO#: " + wo.WorkOrderNumber + "ES: " + wo.QBEditSequence + ".  Setting NeedToUpdateQB flag to true to try again.");
                 wo.NeedToUpdateQB = true;
                 db.Entry(wo).State = EntityState.Modified;
                 db.SaveChanges();

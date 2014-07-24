@@ -190,9 +190,9 @@ namespace QBMigrationTool
             WalkCustomerAddRs(response);
         }
 
-        public static void HandleModResponse(string response)
+        public static bool HandleModResponse(string response)
         {
-            WalkCustomerModRs(response);
+            return WalkCustomerModRs(response);
         }
 
         public static void HandleResponseForUpdate(string response)
@@ -256,7 +256,7 @@ namespace QBMigrationTool
             }
         }
 
-        private static void WalkCustomerModRs(string response)
+        private static bool WalkCustomerModRs(string response)
         {
             //Parse the response XML string into an XmlDocument
             XmlDocument responseXmlDoc = new XmlDocument();
@@ -277,7 +277,7 @@ namespace QBMigrationTool
                 QBUtils.CheckStatus(statusCode, statusSeverity, statusMessage);
 
                 //status code = 0 all OK, > 0 is warning
-                if (Convert.ToInt32(statusCode) >= 0)
+                if (Convert.ToInt32(statusCode) == 0)
                 {
                     XmlNodeList CustomerRetList = responseNode.SelectNodes("//CustomerRet");//XPath Query
                     for (int i = 0; i < CustomerRetList.Count; i++)
@@ -285,7 +285,17 @@ namespace QBMigrationTool
                         XmlNode CustomerRet = CustomerRetList.Item(i);
                         WalkCustomerRetForMod(CustomerRet);
                     }
+
+                    return true;
                 }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
             }
         }
 
