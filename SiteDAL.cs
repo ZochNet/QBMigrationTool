@@ -20,11 +20,19 @@ namespace QBMigrationTool
             string listID = wo.QBListId;
             Site site = db.Sites.Find(wo.SiteId);
 
+            string salesRep = "";
+            UserProfile up = db.UserProfiles.Find(wo.SalesRepId);            
+            if (up != null)
+            {
+                salesRep = up.FirstName + " " + up.LastName;
+            }
+
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site Name", site.SiteName);
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site Unit Number", site.UnitNumber);
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site County", site.County);
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site City/State", site.CityState);
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site POAFE", site.POAFENumber);
+            doc = BuildDataExtModOrDelRq(doc, parent, listID, "Work Order Sales Rep", salesRep);
 
             return doc;
         }
@@ -56,12 +64,12 @@ namespace QBMigrationTool
             return doc;
         }
 
-        public static void HandleResponse(string response)
+        public static bool HandleResponse(string response)
         {
-            WalkDataExtModRs(response);
+            return WalkDataExtModRs(response);
         }
 
-        private static void WalkDataExtModRs(string response)
+        private static bool WalkDataExtModRs(string response)
         {
             //Parse the response XML string into an XmlDocument
             XmlDocument responseXmlDoc = new XmlDocument();
@@ -69,7 +77,7 @@ namespace QBMigrationTool
 
             //Get the response for our request
             XmlNodeList DataExtModRsList = responseXmlDoc.GetElementsByTagName("DataExtModRs");
-            if (DataExtModRsList.Count == 1) //Should always be true since we only did one request in this sample
+            if (DataExtModRsList.Count >= 5) //Should always be true since we update at least 5 elements in this request
             {
                 XmlNode responseNode = DataExtModRsList.Item(0);
                 //Check the status code, info, and severity
@@ -82,7 +90,7 @@ namespace QBMigrationTool
                 QBUtils.CheckStatus(statusCode, statusSeverity, statusMessage);
 
                 //status code = 0 all OK, > 0 is warning
-                if (Convert.ToInt32(statusCode) >= 0)
+                if (Convert.ToInt32(statusCode) == 0)
                 {
                     XmlNodeList DataExtRetList = responseNode.SelectNodes("//DataExtRet");//XPath Query
                     for (int i = 0; i < DataExtRetList.Count; i++)
@@ -90,7 +98,17 @@ namespace QBMigrationTool
                         XmlNode DataExtRet = DataExtRetList.Item(i);
                         WalkDataExtRet(DataExtRet);
                     }
+
+                    return true;
                 }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
             }
         }
 

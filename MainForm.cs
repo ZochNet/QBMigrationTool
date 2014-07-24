@@ -398,7 +398,15 @@ namespace QBMigrationTool
 
             XmlDocument doc = SiteDAL.BuildUpdateRq(wo);
             string response = QBUtils.DoRequest(doc);
-            SiteDAL.HandleResponse(response);
+            bool status = SiteDAL.HandleResponse(response);
+
+            if (!status)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Failed to update site for WO#: " + wo.WorkOrderNumber + ".  Setting NeedToUpdateQB flag to true to try again.");
+                wo.NeedToUpdateQB = true;
+                db.Entry(wo).State = EntityState.Modified;
+                db.SaveChanges();
+            }
         }
 
         private void AddVehicleMileage(int seID, int sdID)
@@ -614,6 +622,8 @@ namespace QBMigrationTool
             foreach (WorkOrder wo in woList)
             {
                 CustomerDAL.UpdateAlreadyExistingWorkOrder(wo.Id);
+                UpdateWorkOrder(wo.Id);
+                UpdateSite(wo.Id);
             }
 
             AppendStatus("Done");
