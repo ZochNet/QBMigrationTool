@@ -53,6 +53,7 @@ namespace QBMigrationTool
         private Button btnSyncNow;
         private Label label1;
         private Button buttonSyncWorkOrders;
+        private Button buttonSyncSalesReps;
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
@@ -145,6 +146,7 @@ namespace QBMigrationTool
             this.btnSyncNow = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.buttonSyncWorkOrders = new System.Windows.Forms.Button();
+            this.buttonSyncSalesReps = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownSyncDuration)).BeginInit();
             this.SuspendLayout();
             // 
@@ -289,10 +291,21 @@ namespace QBMigrationTool
             this.buttonSyncWorkOrders.UseVisualStyleBackColor = true;
             this.buttonSyncWorkOrders.Click += new System.EventHandler(this.buttonSyncWorkOrders_Click);
             // 
+            // buttonSyncSalesReps
+            // 
+            this.buttonSyncSalesReps.Location = new System.Drawing.Point(218, 37);
+            this.buttonSyncSalesReps.Name = "buttonSyncSalesReps";
+            this.buttonSyncSalesReps.Size = new System.Drawing.Size(108, 23);
+            this.buttonSyncSalesReps.TabIndex = 35;
+            this.buttonSyncSalesReps.Text = "Sync Sales Reps";
+            this.buttonSyncSalesReps.UseVisualStyleBackColor = true;
+            this.buttonSyncSalesReps.Click += new System.EventHandler(this.buttonSyncSalesReps_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(801, 794);
+            this.Controls.Add(this.buttonSyncSalesReps);
             this.Controls.Add(this.buttonSyncWorkOrders);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnSyncNow);
@@ -397,6 +410,15 @@ namespace QBMigrationTool
                 db.Entry(wo).State = EntityState.Modified;
                 db.SaveChanges();
             }
+        }
+
+        private void UpdateSalesRep(int woID)
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            WorkOrder wo = db.WorkOrders.Find(woID);
+
+            XmlDocument doc = SiteDAL.BuildUpdateSalesRepRq(wo);
+            string response = QBUtils.DoRequest(doc);            
         }
 
         private void UpdateSite(int woID)
@@ -568,6 +590,23 @@ namespace QBMigrationTool
             SyncQBData();
             
             AppendStatus("Sync Completed: " + DateTime.Now.ToString());
+            AppendStatus(Environment.NewLine);
+        }
+
+        private void SyncSalesReps()
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            List<WorkOrder> woList = null;
+
+            AppendStatus("Syncing Work Order Sales Reps...");
+                        
+            woList = db.WorkOrders.Where(wo => wo.IsActive == true).ToList();
+            foreach (WorkOrder wo in woList)
+            {
+                UpdateSalesRep(wo.Id);                
+            }
+
+            AppendStatus("Done");
             AppendStatus(Environment.NewLine);
         }
 
@@ -977,6 +1016,19 @@ namespace QBMigrationTool
             {
                 ClearStatus();
                 SyncWorkOrders();
+            }
+            catch (Exception ex)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+            }
+        }
+
+        private void buttonSyncSalesReps_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ClearStatus();
+                SyncSalesReps();
             }
             catch (Exception ex)
             {

@@ -11,6 +11,27 @@ namespace QBMigrationTool
 {
     public class SiteDAL
     {
+        public static XmlDocument BuildUpdateSalesRepRq(WorkOrder wo)
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            XmlDocument doc = XmlUtils.MakeRequestDocument();
+            XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
+
+            string listID = wo.QBListId;
+            Site site = db.Sites.Find(wo.SiteId);
+
+            string salesRep = "";
+            UserProfile up = db.UserProfiles.Find(wo.SalesRepId);
+            if (up != null)
+            {
+                salesRep = up.FirstName + " " + up.LastName;
+            }
+             
+            doc = BuildDataExtModOrDelRq(doc, parent, listID, "Work Order Sales Rep", salesRep);
+
+            return doc;
+        }
+
         public static XmlDocument BuildUpdateRq(WorkOrder wo)
         {
             RotoTrackDb db = new RotoTrackDb();
