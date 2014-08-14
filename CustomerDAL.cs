@@ -155,7 +155,14 @@ namespace QBMigrationTool
                     {
                         IsActive = CustomerRet.SelectSingleNode("./IsActive").InnerText;
 
-                        wo.IsActive = (IsActive == "true") ? true : false;
+                        if (IsActive == "false")
+                        {
+                            wo.Status = WorkOrderStatus.Inactive;
+                        }
+                        else
+                        {
+                            wo.Status = WorkOrderStatus.Open;
+                        }
                         db.SaveChanges();
                     }
                 }

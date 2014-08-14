@@ -600,7 +600,7 @@ namespace QBMigrationTool
 
             AppendStatus("Syncing Work Order Sales Reps...");
                         
-            woList = db.WorkOrders.Where(wo => wo.IsActive == true).ToList();
+            woList = db.WorkOrders.Where(wo => wo.statusValue != (int)WorkOrderStatus.Inactive).ToList();
             foreach (WorkOrder wo in woList)
             {
                 UpdateSalesRep(wo.Id);                

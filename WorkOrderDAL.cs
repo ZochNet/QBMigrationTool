@@ -72,7 +72,7 @@ namespace QBMigrationTool
 
             CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "Name", wo.WorkOrderNumber));
 
-            string isActive = (wo.IsActive == true) ? "1" : "0";
+            string isActive = (wo.statusValue != (int)WorkOrderStatus.Inactive) ? "1" : "0";
             CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "IsActive", isActive));
 
             XmlElement ParentRef = doc.CreateElement("ParentRef");
