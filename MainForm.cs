@@ -394,7 +394,7 @@ namespace QBMigrationTool
             WorkOrderDAL.HandleResponseForUpdate(response);
         }
 
-        private void UpdateWorkOrder(int woID)
+        private bool UpdateWorkOrder(int woID)
         {
             RotoTrackDb db = new RotoTrackDb();
             WorkOrder wo = db.WorkOrders.Find(woID);
@@ -409,6 +409,11 @@ namespace QBMigrationTool
                 wo.NeedToUpdateQB = true;
                 db.Entry(wo).State = EntityState.Modified;
                 db.SaveChanges();
+                return false;
+            }
+            else
+            {
+                return true;
             }
         }
 
@@ -417,22 +422,22 @@ namespace QBMigrationTool
             RotoTrackDb db = new RotoTrackDb();
             WorkOrder wo = db.WorkOrders.Find(woID);
 
-            XmlDocument doc = SiteDAL.BuildUpdateSalesRepRq(wo);
+            XmlDocument doc = SiteAndAdditionalInfoDAL.BuildUpdateSalesRepRq(wo);
             string response = QBUtils.DoRequest(doc);            
         }
 
-        private void UpdateSite(int woID)
+        private void UpdateSiteAndAdditionalInfo(int woID)
         {
             RotoTrackDb db = new RotoTrackDb();
             WorkOrder wo = db.WorkOrders.Find(woID);
 
-            XmlDocument doc = SiteDAL.BuildUpdateRq(wo);
+            XmlDocument doc = SiteAndAdditionalInfoDAL.BuildUpdateRq(wo);
             string response = QBUtils.DoRequest(doc);
-            bool status = SiteDAL.HandleResponse(response);
+            bool status = SiteAndAdditionalInfoDAL.HandleResponse(response);
 
             if (!status)
             {
-                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Failed to update site for WO#: " + wo.WorkOrderNumber + " ListID: " + wo.QBListId + ".  Setting NeedToUpdateQB flag to true to try again.");
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Failed to update site and additional info for WO#: " + wo.WorkOrderNumber + " ListID: " + wo.QBListId + ".  Setting NeedToUpdateQB flag to true to try again.");
                 wo.NeedToUpdateQB = true;
                 db.Entry(wo).State = EntityState.Modified;
                 db.SaveChanges();
@@ -630,8 +635,10 @@ namespace QBMigrationTool
                     AddWorkOrder(wo.Id);
                     // Evertime we add a work order, we have to immediately follow up with an update to the work order and the site--QB quirkiness
                     // But first, get the latest copy from the database            
-                    UpdateWorkOrder(wo.Id);
-                    UpdateSite(wo.Id);
+                    if (UpdateWorkOrder(wo.Id))
+                    {
+                        UpdateSiteAndAdditionalInfo(wo.Id);
+                    }
                 }
             }
 
@@ -648,29 +655,35 @@ namespace QBMigrationTool
                     AddWorkOrder(wo.Id);
                     // Evertime we add a work order, we have to immediately follow up with an update to the work order and the site--QB quirkiness
                     // But first, get the latest copy from the database            
-                    UpdateWorkOrder(wo.Id);
-                    UpdateSite(wo.Id);
+                    if (UpdateWorkOrder(wo.Id))
+                    {
+                        UpdateSiteAndAdditionalInfo(wo.Id);
+                    }
                 }
             }
 
-            // Next, all the work orders that need to be updated in Quickbooks
-            woList = db.WorkOrders.Where(wo => wo.NeedToUpdateQB == true).ToList();
+            // Next, all the work orders that need to be updated in Quickbooks where QBListId is not null
+            woList = db.WorkOrders.Where(wo => wo.NeedToUpdateQB == true && wo.QBListId != null).ToList();
             foreach (WorkOrder wo in woList)
             {
                 // Update EditSequence for the workorder and then update the work order and site.
                 UpdateWorkOrderEditSequence(wo.Id);
-                UpdateWorkOrder(wo.Id);
-                UpdateSite(wo.Id);
+                if (UpdateWorkOrder(wo.Id))
+                {
+                    UpdateSiteAndAdditionalInfo(wo.Id);
+                }
             }
               
             // Finally, in case we encounter the quirk where we try to add a work order, but it's already in Quickbooks, let's get the ListID and EditSequence 
             // from QuickBooks and save it
-            woList = db.WorkOrders.Where(wo => wo.QBListId == null).ToList();
+            woList = db.WorkOrders.Where(wo => wo.QBListId == null && wo.NeedToUpdateQB == true).ToList();
             foreach (WorkOrder wo in woList)
             {
                 CustomerDAL.UpdateAlreadyExistingWorkOrder(wo.Id);
-                UpdateWorkOrder(wo.Id);
-                UpdateSite(wo.Id);
+                if (UpdateWorkOrder(wo.Id))
+                {
+                    UpdateSiteAndAdditionalInfo(wo.Id);
+                }
             }
 
             AppendStatus("Done");
@@ -904,6 +917,7 @@ namespace QBMigrationTool
             catch (Exception ex)
             {
                 Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+                AppendStatus("Exception occurred!");
             }
             aTimer.Enabled = true;
         }
@@ -917,6 +931,7 @@ namespace QBMigrationTool
             catch (Exception ex)
             {
                 Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+                AppendStatus("Exception occurred!");
             }
         }
 
@@ -943,6 +958,7 @@ namespace QBMigrationTool
                 catch (Exception ex)
                 {
                     Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+                    AppendStatus("Exception occurred!");
                 }
                 aTimer.Enabled = true;
             }            
@@ -1020,6 +1036,7 @@ namespace QBMigrationTool
             catch (Exception ex)
             {
                 Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+                AppendStatus("Exception occurred!");
             }
         }
 
@@ -1033,6 +1050,7 @@ namespace QBMigrationTool
             catch (Exception ex)
             {
                 Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+                AppendStatus("Exception occurred!");
             }
         }
 

@@ -198,11 +198,14 @@ namespace QBMigrationTool
             invoice.AreaListID = AreaListID;
 
             // Also, set the Work Order status to Invoiced
+            // WE NO LONGER DO THIS BUT INSTEAD SET THIS TO INVOICED ONCE THE invoice delivery status and date are set
+            /*
             if (db.WorkOrders.Any(f => f.QBListId == WorkOrderListID))
             {
                 WorkOrder wo = db.WorkOrders.Where(f => f.QBListId == WorkOrderListID).First();
                 wo.Status = WorkOrderStatus.Invoiced;
             }
+            */
 
             db.SaveChanges();
             

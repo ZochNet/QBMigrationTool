@@ -72,7 +72,7 @@ namespace QBMigrationTool
 
             CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "Name", wo.WorkOrderNumber));
 
-            string isActive = (wo.statusValue != (int)WorkOrderStatus.Inactive) ? "1" : "0";
+            string isActive = (wo.statusValue != (int)WorkOrderStatus.Inactive) ? "1" : "0";            
             CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "IsActive", isActive));
 
             XmlElement ParentRef = doc.CreateElement("ParentRef");
@@ -163,9 +163,42 @@ namespace QBMigrationTool
             CustomerAddOrMod.AppendChild(CustomerTypeRef);
             CustomerTypeRef.AppendChild(XmlUtils.MakeSimpleElem(doc, "ListID", bi.QBListId));
 
-            CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "JobStatus", "InProgress"));
+            switch (wo.JobStatus)
+            {
+                case JobStatus.Awarded:
+                    CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "JobStatus", "Awarded"));
+                    break;
+
+                case JobStatus.Complete:
+                    CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "JobStatus", "Closed"));
+                    break;
+
+                case JobStatus.InProgress:
+                    CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "JobStatus", "InProgress"));
+                    break;
+
+                case JobStatus.NotApplicable:
+                    CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "JobStatus", "None"));
+                    break;
+
+                case JobStatus.NotAwarded:
+                    CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "JobStatus", "NotAwarded"));
+                    break;
+
+                case JobStatus.Pending:
+                    CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "JobStatus", "Pending"));
+                    break;
+
+                default:
+                    break;
+            }
+
             CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "JobStartDate", wo.EstStartDate.ToString("yyyy-MM-dd")));
             CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "JobProjectedEndDate", wo.EstEndDate.ToString("yyyy-MM-dd")));
+            if (wo.ActualEndDate != DateTime.Parse("1900-01-01 00:00:00.000"))
+            {
+                CustomerAddOrMod.AppendChild(XmlUtils.MakeSimpleElem(doc, "JobEndDate", wo.ActualEndDate.ToString("yyyy-MM-dd")));
+            }
 
             if (wo.JobDescription != null)
             {

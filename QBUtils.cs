@@ -19,7 +19,7 @@ namespace QBMigrationTool
             string ticket = null;
             string response = null;
             bool errorOccurred = false;
-            int maxTries = 5;
+            int maxTries = 1;
             int tries = 0;
 
             do

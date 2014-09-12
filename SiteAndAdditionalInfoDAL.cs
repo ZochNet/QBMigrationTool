@@ -9,7 +9,7 @@ using System.Xml;
 
 namespace QBMigrationTool
 {
-    public class SiteDAL
+    public class SiteAndAdditionalInfoDAL
     {
         public static XmlDocument BuildUpdateSalesRepRq(WorkOrder wo)
         {
@@ -54,6 +54,41 @@ namespace QBMigrationTool
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site City/State", site.CityState);
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site POAFE", site.POAFENumber);
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Work Order Sales Rep", salesRep);
+
+            switch (wo.CloseStatus)
+            {
+                case CloseStatus.BillAtCost:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Bill at Cost");
+                    break;
+
+                case CloseStatus.BillPerQuote:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Bill per Quote");
+                    break;
+
+                case CloseStatus.ClosedAtZeroDollars:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Closed at Zero $");
+                    break;
+
+                case CloseStatus.NotApplicable:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "");
+                    break;
+
+                case CloseStatus.PreClose:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Pre-close");
+                    break;
+
+                case CloseStatus.ReadyForPreClose:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Ready for Pre-close");
+                    break;
+
+                case CloseStatus.Warranty:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Warranty");
+                    break;
+                    
+                default:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "");
+                    break;
+            }            
 
             return doc;
         }

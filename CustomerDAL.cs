@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using zochnet_utils;
 
 namespace QBMigrationTool
 {
@@ -145,6 +146,7 @@ namespace QBMigrationTool
             else
             {
                 // Get associated work order and update the IsActive flag in case someone marked it inactive in QuickBooks.
+                // Also, update some additional info that the user may set in QuickBooks that we need to sync back over.
                 string ListID = CustomerRet.SelectSingleNode("./ListID").InnerText;
                 if (db.WorkOrders.Any(f => f.QBListId == ListID))
                 {
@@ -154,17 +156,87 @@ namespace QBMigrationTool
                     if (CustomerRet.SelectSingleNode("./IsActive") != null)
                     {
                         IsActive = CustomerRet.SelectSingleNode("./IsActive").InnerText;
-
                         if (IsActive == "false")
                         {
                             wo.Status = WorkOrderStatus.Inactive;
                         }
-                        else
-                        {
-                            wo.Status = WorkOrderStatus.Open;
-                        }
-                        db.SaveChanges();
                     }
+                    // Leave wo.Status alone if not marked Inactive.
+
+                    //<DataExtName>Invoice Delivery Status</DataExtName><DataExtType>STR255TYPE</DataExtType><DataExtValue>Warranty</DataExtValue></DataExtRet><DataExtRet><OwnerID>0</OwnerID><DataExtName>Invoice Delivery Status Date</DataExtName><DataExtType>STR255TYPE</DataExtType><DataExtValue>09/12/2014</DataExtValue></DataExtRet>
+                    bool gotInvoiceDeliveryStatus = false;
+                    bool gotInvoiceDeliveryStatusDate = false;
+                    XmlNodeList DataExtRetList = CustomerRet.SelectNodes("./DataExtRet");
+                    if (DataExtRetList != null)
+                    {
+                        for (int i = 0; i < DataExtRetList.Count; i++)
+                        {
+                            XmlNode DataExtRet = DataExtRetList.Item(i);                          
+                            //Get value of DataExtName
+                            string DataExtName = DataExtRet.SelectSingleNode("./DataExtName").InnerText;
+                            //Get value of DataExtType
+                            string DataExtType = DataExtRet.SelectSingleNode("./DataExtType").InnerText;
+                            //Get value of DataExtValue
+                            string DataExtValue = DataExtRet.SelectSingleNode("./DataExtValue").InnerText;
+
+                            
+                            if (DataExtName == "Invoice Delivery Status")
+                            {
+                                //wo.InvoiceDeliveryStatus
+                                switch (DataExtValue)
+                                {
+                                    case "Closed at Zero $":
+                                        wo.InvoiceDeliveryStatus = InvoiceDeliveryStatus.ClosedAtZeroDollars;
+                                        break;
+    
+                                    case "Warranty":
+                                        wo.InvoiceDeliveryStatus = InvoiceDeliveryStatus.Warranty;
+                                        break;
+
+                                    case "Invoice Hold-Coding/Signature":
+                                        wo.InvoiceDeliveryStatus = InvoiceDeliveryStatus.InvoiceHoldCodingSignature;
+                                        break;
+
+                                    case "Invoice Mailed":
+                                        wo.InvoiceDeliveryStatus = InvoiceDeliveryStatus.InvoiceMailed;
+                                        break;
+
+                                    case "Invoice Emailed":
+                                        wo.InvoiceDeliveryStatus = InvoiceDeliveryStatus.InvoiceEmailed;
+                                        break;
+
+                                    case "Invoice Thru ADP":
+                                        wo.InvoiceDeliveryStatus = InvoiceDeliveryStatus.InvoiceThruADP;
+                                        break;
+
+                                    case "Invoice Hand Delivered":
+                                        wo.InvoiceDeliveryStatus = InvoiceDeliveryStatus.InvoiceHandDelivered;
+                                        break;
+                                    
+                                    default:
+                                        Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Unknown Invoice Delivery Status");
+                                        break;
+                                }
+
+                                gotInvoiceDeliveryStatus = true;
+                            }
+
+                            else if (DataExtName == "Invoice Delivery Status Date")
+                            {
+                                if (DataExtValue.Length > 0)
+                                {
+                                    gotInvoiceDeliveryStatusDate = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if (gotInvoiceDeliveryStatus && gotInvoiceDeliveryStatusDate)
+                    {
+                        wo.Status = WorkOrderStatus.Invoiced;
+                    }
+
+                    db.SaveChanges();                    
                 }
 
                 // Get parent customer

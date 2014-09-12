@@ -169,7 +169,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="SalesOrderDAL.cs" />
-    <Compile Include="SiteDAL.cs" />
+    <Compile Include="SiteAndAdditionalInfoDAL.cs" />
     <Compile Include="TimeTrackingDAL.cs" />
     <Compile Include="VehicleDAL.cs" />
     <Compile Include="VehicleMileageDAL.cs" />
