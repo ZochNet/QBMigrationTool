@@ -225,9 +225,115 @@ namespace QBMigrationTool
                             {
                                 if (DataExtValue.Length > 0)
                                 {
+                                    DateTime invoiceDeliveryStatusDate;
+                                    if (DateTime.TryParse(DataExtValue, out invoiceDeliveryStatusDate))
+                                    {
+                                        wo.InvoiceDeliveryStatusDate = invoiceDeliveryStatusDate;
+                                    }
                                     gotInvoiceDeliveryStatusDate = true;
                                 }
                             }
+                                                          
+                            else if (DataExtName == "Reason for Lost Quote")
+                            {                              
+                                switch (DataExtValue)
+                                {
+                                    case "Price Level":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.PriceLevel;
+                                        break;
+
+                                    case "Delivery of Service":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.DeliveryOfService;
+                                        break;
+
+                                        case "Slow Quote Response":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.SlowQuoteResponse;
+                                        break;
+
+                                        case "Relationship w Competitor":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.RelationshipWithCompetitor;
+                                        break;
+
+                                        case "Billing/ Invoicing":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.BillingInvoicing;
+                                        break;
+
+                                        case "Warranty":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.Warranty;
+                                        break;
+
+                                        case "Lack of Knowledge":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.LackOfKnowledge;
+                                        break;
+
+                                        case "Lack of Product Choice":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.LackOfProductChoice;
+                                        break;
+
+                                        case "None":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.None;
+                                        break;
+
+                                    default:
+                                        Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Unknown Reason for Lost Quote");
+                                        break;
+                                }                                                             
+                            }
+                                                           
+                            else if (DataExtName == "Collection Status")
+                            {                                
+                                switch (DataExtValue)
+                                {
+                                    case "Dispute - Labor Rate":
+                                        wo.CollectionStatus = CollectionStatus.DisputeLaborRate;
+                                        break;
+
+                                    case "Dispute - Parts Rate":
+                                        wo.CollectionStatus = CollectionStatus.DisputePartsRate;
+                                        break;
+
+                                    case "Missing - Codes":
+                                        wo.CollectionStatus = CollectionStatus.MissingCodes;
+                                        break;
+
+                                    case "Missing - PO/ AFE #":
+                                        wo.CollectionStatus = CollectionStatus.MissingPOAFE;
+                                        break;
+
+                                    case "Missing - Signature":
+                                        wo.CollectionStatus = CollectionStatus.MissingSignature;
+                                        break;
+
+                                    case "Request - Approver Name":
+                                        wo.CollectionStatus = CollectionStatus.RequestApproverName;
+                                        break;
+
+                                    case "Request - DSR Copies":
+                                        wo.CollectionStatus = CollectionStatus.RequestDSRCopies;
+                                        break;
+
+                                    case "Request - Parts Receipts":
+                                        wo.CollectionStatus = CollectionStatus.RequestPartsReceipts;
+                                        break;
+
+                                    case "Request - Resubmit":
+                                        wo.CollectionStatus = CollectionStatus.RequestResubmit;
+                                        break;
+
+                                    case "Request - Revision per Quote":
+                                        wo.CollectionStatus = CollectionStatus.RequestRevisionPerQuote;
+                                        break;
+
+                                    case "In Process":
+                                        wo.CollectionStatus = CollectionStatus.InProcess;
+                                        break;
+
+                                    default:
+                                        Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Unknown Collection Status");
+                                        break;
+                                }
+                            }
+
                         }
                     }
 
