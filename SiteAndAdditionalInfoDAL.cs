@@ -77,6 +77,14 @@ namespace QBMigrationTool
                     doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Pre-close");
                     break;
 
+                case CloseStatus.PreCloseHold:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Pre-close HOLD");
+                    break;
+
+                case CloseStatus.Approved:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Approved");
+                    break;
+
                 case CloseStatus.ReadyForPreClose:
                     doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Ready for Pre-close");
                     break;
