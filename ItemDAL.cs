@@ -25,6 +25,18 @@ namespace QBMigrationTool
             return doc;
         }
 
+        public static XmlDocument BuildQueryRequest(string activeStatus)
+        {
+            XmlDocument doc = XmlUtils.MakeRequestDocument();
+            XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
+            XmlElement queryElement = doc.CreateElement("ItemQueryRq");
+            parent.AppendChild(queryElement);
+
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "ActiveStatus", activeStatus));
+
+            return doc;
+        }
+
         public static void HandleResponse(string response)
         {
             WalkItemQueryRs(response);
@@ -637,6 +649,7 @@ namespace QBMigrationTool
                 }
 
                 */
+           
             }
             //Done with field values for ItemNonInventoryRet aggregate
             
@@ -949,7 +962,7 @@ namespace QBMigrationTool
                 }
 
                 Item o = ItemDAL.FindOrCreateItem(db, ListID, EditSequence, TimeCreated, TimeModified, Name, FullName, IsActive, "ItemInventory");
-                db.SaveChanges();
+                //db.SaveChanges();
 
                 /*
                 //Get all field values for ClassRef aggregate 
@@ -1039,13 +1052,15 @@ namespace QBMigrationTool
 
                 }
                 //Done with field values for SalesTaxCodeRef aggregate
-
+                */
                 //Get value of SalesDesc
-                if (OR.SelectSingleNode("./ItemInventoryRet/SalesDesc") != null)
+                if (OR.SelectSingleNode("./SalesDesc") != null)
                 {
-                    string SalesDesc = OR.SelectSingleNode("./ItemInventoryRet/SalesDesc").InnerText;
-
+                    string SalesDesc = OR.SelectSingleNode("./SalesDesc").InnerText;
+                    o.Description = SalesDesc;
                 }
+
+                /*
                 //Get value of SalesPrice
                 if (OR.SelectSingleNode("./ItemInventoryRet/SalesPrice") != null)
                 {
@@ -1156,12 +1171,20 @@ namespace QBMigrationTool
                     string QuantityOnHand = OR.SelectSingleNode("./ItemInventoryRet/QuantityOnHand").InnerText;
 
                 }
+                */
                 //Get value of AverageCost
-                if (OR.SelectSingleNode("./ItemInventoryRet/AverageCost") != null)
+                if (OR.SelectSingleNode("./AverageCost") != null)
                 {
-                    string AverageCost = OR.SelectSingleNode("./ItemInventoryRet/AverageCost").InnerText;
-
+                    string AverageCost = OR.SelectSingleNode("./AverageCost").InnerText;
+                    o.AverageCost = 0.0M;
+                    decimal amount;
+                    if (Decimal.TryParse(AverageCost, out amount))
+                    {
+                        o.AverageCost = amount;                        
+                    }
                 }
+                                
+                /*
                 //Get value of QuantityOnOrder
                 if (OR.SelectSingleNode("./ItemInventoryRet/QuantityOnOrder") != null)
                 {
@@ -1205,6 +1228,8 @@ namespace QBMigrationTool
                 }
                 */
 
+                // Save DB Changes
+                db.SaveChanges();
             }
             //Done with field values for ItemInventoryRet aggregate
 
@@ -1237,7 +1262,7 @@ namespace QBMigrationTool
                 }
 
                 Item o = ItemDAL.FindOrCreateItem(db, ListID, EditSequence, TimeCreated, TimeModified, Name, FullName, IsActive, "ItemInventoryAssembly");
-                db.SaveChanges();
+                //db.SaveChanges();
 
                 /*
                 //Get all field values for ClassRef aggregate 
@@ -1327,13 +1352,14 @@ namespace QBMigrationTool
 
                 }
                 //Done with field values for SalesTaxCodeRef aggregate
-
+                */
                 //Get value of SalesDesc
-                if (OR.SelectSingleNode("./ItemInventoryAssemblyRet/SalesDesc") != null)
+                if (OR.SelectSingleNode("./SalesDesc") != null)
                 {
-                    string SalesDesc = OR.SelectSingleNode("./ItemInventoryAssemblyRet/SalesDesc").InnerText;
-
+                    string SalesDesc = OR.SelectSingleNode("./SalesDesc").InnerText;
+                    o.Description = SalesDesc;
                 }
+                /*
                 //Get value of SalesPrice
                 if (OR.SelectSingleNode("./ItemInventoryAssemblyRet/SalesPrice") != null)
                 {
@@ -1444,12 +1470,21 @@ namespace QBMigrationTool
                     string QuantityOnHand = OR.SelectSingleNode("./ItemInventoryAssemblyRet/QuantityOnHand").InnerText;
 
                 }
+                
+                */
                 //Get value of AverageCost
-                if (OR.SelectSingleNode("./ItemInventoryAssemblyRet/AverageCost") != null)
+                if (OR.SelectSingleNode("./AverageCost") != null)
                 {
-                    string AverageCost = OR.SelectSingleNode("./ItemInventoryAssemblyRet/AverageCost").InnerText;
-
+                    string AverageCost = OR.SelectSingleNode("./AverageCost").InnerText;
+                    o.AverageCost = 0.0M;
+                    decimal amount;
+                    if (Decimal.TryParse(AverageCost, out amount))
+                    {
+                        o.AverageCost = amount;
+                    }
                 }
+
+                /*
                 //Get value of QuantityOnOrder
                 if (OR.SelectSingleNode("./ItemInventoryAssemblyRet/QuantityOnOrder") != null)
                 {
@@ -1526,6 +1561,7 @@ namespace QBMigrationTool
                 }
 
                 */
+                db.SaveChanges();
             }
             //Done with field values for ItemInventoryAssemblyRet aggregate
 

@@ -783,6 +783,40 @@ namespace QBMigrationTool
             AppendStatus(Environment.NewLine);
         }
 
+        private void ExportItemList()
+        {
+            string csv = BuildItemListCsv();
+            string filePath = "C:\\Roto-Versal-Public\\Accounts\\WO\\";
+            System.IO.Directory.CreateDirectory(filePath);
+            string outFile = filePath + "ItemList.csv";
+            System.IO.File.WriteAllText(outFile, csv.ToString());
+        }
+
+        private string BuildItemListCsv()
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            List<Item> ItemData = db.Items.Where(f => (f.ItemType == "ItemInventory" || f.ItemType == "ItemInventoryAssembly") && f.IsActive).ToList();
+            string csv = "Type, Name, Description, Average Cost" + Environment.NewLine;
+            foreach (Item item in ItemData)
+            {
+                string type = "";
+                string name = "";
+                string description = "";
+                string averageCost = "";
+
+                if (item.ItemType != null) type = item.ItemType.Replace("'", "''").Replace("\"", "\"\"");
+                if (item.Name != null) name = item.Name.Replace("'", "''").Replace("\"", "\"\"");
+                if (item.Description != null) description = item.Description.Replace("'", "''").Replace("\"", "\"\"");
+                averageCost = item.AverageCost.ToString();
+
+                csv += "\"" + type + "\",";
+                csv += "\"" + name + "\",";
+                csv += "\"" + description + "\",";                
+                csv += "\"" + averageCost + "\"" + Environment.NewLine;
+            }
+            return csv;
+        }
+
         private void SyncQBData()
         {
             XmlDocument doc = null;
@@ -860,6 +894,7 @@ namespace QBMigrationTool
             //VehicleMileageDAL.HandleResponse(response);
             AppendStatus("Sync Items...");                  
             doc = ItemDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
+            //doc = ItemDAL.BuildQueryRequest(activeStatus);
             response = SyncDataHelper(doc);
             AppendStatus("Done" + Environment.NewLine + "Processing...");
             ItemDAL.HandleResponse(response);
@@ -913,6 +948,7 @@ namespace QBMigrationTool
             try
             {
                 DoSync();
+                ExportItemList();
             }
             catch (Exception ex)
             {
@@ -927,6 +963,7 @@ namespace QBMigrationTool
             try
             {
                 DoSync();
+                ExportItemList();
             }
             catch (Exception ex)
             {
@@ -954,6 +991,7 @@ namespace QBMigrationTool
                 try
                 {
                     DoSync();
+                    ExportItemList();
                 }
                 catch (Exception ex)
                 {
