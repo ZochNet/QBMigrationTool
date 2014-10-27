@@ -847,7 +847,7 @@ namespace QBMigrationTool
             // Exception for VehicleMileage due to bug in Quickbooks where querying against modified date gets all the mileage--so have to use transaction date, back 30 days.
             // "yyyy-MM-ddTHH:mm:ssK" or "yyyy-MM-dd"
             AppendStatus("Sync Vehicle Mileage...");              
-            string fromDateOnly = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -30, true);
+            string fromDateOnly = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -180, true);
             string toDateOnly = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, true);
             doc = VehicleMileageDAL.BuildQueryRequest(fromDateOnly, toDateOnly);
             response = SyncDataHelper(doc);

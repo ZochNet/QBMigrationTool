@@ -57,8 +57,8 @@ namespace QBMigrationTool
 
             switch (wo.CloseStatus)
             {
-                case CloseStatus.BillAtCost:
-                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Bill at Cost");
+                case CloseStatus.BillPerPreCloseSalePrice:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Bill per PreClose Sale Price");
                     break;
 
                 case CloseStatus.BillPerQuote:
