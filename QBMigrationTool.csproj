@@ -109,16 +109,16 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'LIVE_ROTO_DB_SYNC|AnyCPU'">
     <OutputPath>bin\LIVE_ROTO_DB_SYNC\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;LIVE_ROTO, LIVE_ROTO_DB_SYNC</DefineConstants>
+    <DefineConstants>TRACE;LIVE_ROTO, LIVE_ROTO_DB_SYNC</DefineConstants>
     <BaseAddress>285212672</BaseAddress>
-    <Optimize>false</Optimize>
+    <Optimize>true</Optimize>
     <FileAlignment>4096</FileAlignment>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
-    <DebugType>full</DebugType>
-    <DebugSymbols>true</DebugSymbols>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EntityFramework">
