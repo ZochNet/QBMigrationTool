@@ -991,8 +991,9 @@ namespace QBMigrationTool
             int totalWo = woList.Count;
             int currentWo = 1;
 
-            foreach (WorkOrder wo in woList)
-            {
+            //for (int i = currentWo; i < totalWo; i++) {
+            foreach (WorkOrder wo in woList) {
+                //WorkOrder wo = woList.ToArray()[i];
                 AppendStatus("Syncing " + currentWo.ToString() + " of " + totalWo.ToString() + Environment.NewLine);
                 UpdateEstDollarAmountForWorkOrder(wo.Id);
                 currentWo++;
@@ -1069,10 +1070,10 @@ namespace QBMigrationTool
                     Type = "Mileage",
                     BillableStatus = mileagetracking.BillableStatus,
                     Date = mileagetracking.TripStartDate,
-                    Item = mileagerate.Name,
+                    Item = (mileagerate == null) ? "" : mileagerate.Name,
                     Description = (vehicle == null) ? "" : vehicle.Name,
                     Unit = mileagetracking.TotalMiles * 1.0M,
-                    Rate = mileagerate.Rate * 1.0M,
+                    Rate = (mileagerate == null) ? 0.0M : (mileagerate.Rate * 1.0M),
                     Amount = mileagetracking.BillableAmount * 1.0M,
                     SalePrice = mileagetracking.BillableAmount * 1.0M,
                     Comments = mileagetracking.Notes
