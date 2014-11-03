@@ -26,6 +26,10 @@ using rototrack_model;
 using System.Linq;
 using System.Timers;
 using zochnet_utils;
+using System.Reflection;
+using System.Text;
+using System.IO;
+using System.Threading;
 
 namespace QBMigrationTool
 {
@@ -36,6 +40,8 @@ namespace QBMigrationTool
 	public class MainForm : System.Windows.Forms.Form
     {
         #region Member Data
+        private bool stopUpdateAmountThread;
+        private Thread updateAmountThread = null;
         private System.Timers.Timer aTimer;
 		private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button Exit;
@@ -79,6 +85,8 @@ namespace QBMigrationTool
             //aTimer = new System.Timers.Timer(10000);
             aTimer = new System.Timers.Timer((double)numericUpDownSyncDuration.Value * 60.0 * 1000.0);
             aTimer.Elapsed += aTimer_Elapsed;
+
+            this.stopUpdateAmountThread = false;
 
             // Initialize web security for creating users
             try
@@ -785,11 +793,16 @@ namespace QBMigrationTool
 
         private void ExportItemList()
         {
+            AppendStatus("Exporting Item List...");
+
             string csv = BuildItemListCsv();
             string filePath = "C:\\Roto-Versal-Public\\Accounts\\WO\\";
             System.IO.Directory.CreateDirectory(filePath);
             string outFile = filePath + "ItemList.csv";
             System.IO.File.WriteAllText(outFile, csv.ToString());
+
+            AppendStatus("Done");
+            AppendStatus(Environment.NewLine);
         }
 
         private string BuildItemListCsv()
@@ -939,6 +952,247 @@ namespace QBMigrationTool
             
             AppConfig.SetLastSyncTime(DateTime.Now);
         }
+
+        private void UpdateEstDollarAmountForAllWorkOrders(bool force=false)
+        {
+            bool doUpdate = false;
+            DateTime nowTime = DateTime.Now;
+            DateTime startTime = DateTime.Today.AddHours(2).AddMinutes(45);
+            DateTime endTime = DateTime.Today.AddHours(3).AddMinutes(0);
+
+            AppendStatus("NOTE: Update Dollar amounts is enabled nightly only for auto sync from " + startTime.ToString() + " to " + endTime.ToString());
+            AppendStatus(Environment.NewLine);
+                        
+            if (nowTime > startTime && nowTime < endTime)
+            {
+                doUpdate = true;    
+            }
+            else if (force)
+            {
+                doUpdate = true;
+            }
+
+            if (doUpdate)
+            {                
+                this.updateAmountThread = new Thread(new ThreadStart(this.UpdateEstDollarAmountForAllWorkOrdersThread));
+                this.updateAmountThread.Start();
+            }
+        }
+
+        private void UpdateEstDollarAmountForAllWorkOrdersThread()
+        {
+            AppendStatus("Sync Est Dollar Amounts..." + Environment.NewLine);
+
+            RotoTrackDb db = new RotoTrackDb();
+
+            // Get active work orders that have a QBListID set
+            List<WorkOrder> woList = db.WorkOrders.Where(wo => wo.QBListId != null && wo.statusValue != (int)WorkOrderStatus.Inactive).ToList();
+
+            int totalWo = woList.Count;
+            int currentWo = 1;
+
+            foreach (WorkOrder wo in woList)
+            {
+                AppendStatus("Syncing " + currentWo.ToString() + " of " + totalWo.ToString() + Environment.NewLine);
+                UpdateEstDollarAmountForWorkOrder(wo.Id);
+                currentWo++;
+
+                if (this.stopUpdateAmountThread)
+                {
+                    this.updateAmountThread.Abort();
+                }
+            }
+
+            AppendStatus("Done" + Environment.NewLine);
+        }
+
+        private void UpdateEstDollarAmountForWorkOrder(int woID)
+        {
+            RotoTrackDb db = new RotoTrackDb();
+
+            WorkOrder wo = db.WorkOrders.Find(woID);
+            string woListID = wo.QBListId;
+
+            List<TimeTracking> timetrackings;
+            timetrackings = db.TimeTrackings.Where(f => f.QBWorkOrderListID == woListID).ToList();
+
+            List<MileageTracking> mileagetrackings;
+            mileagetrackings = db.MileageTrackings.Where(f => f.QBWorkOrderListID == woListID).ToList();
+
+            List<BillLine> billLines;
+            billLines = db.BillLines.Where(f => f.WorkOrderListID == woListID).ToList();
+
+            List<SalesOrderLine> soLines;
+            soLines = db.SalesOrderLines.Where(f => f.WorkOrderListID == woListID).ToList();
+
+            var workorders = db.WorkOrders.ToList();
+            var users = db.UserProfiles.ToList();
+            var servicetypes = db.ServiceTypes.ToList();
+            var customers = db.Customers.ToList();
+            var vehicles = db.Vehicles.ToList();
+            var mileagerates = db.MileageRates.ToList();
+            var vendors = db.Vendors.ToList();
+            var items = db.Items.ToList();
+
+            var tt_results =
+                from tt in timetrackings
+                from workorder in workorders.Where(f => f.QBListId == tt.QBWorkOrderListID).DefaultIfEmpty()
+                from customer in customers.Where(f => f.Id == (workorder == null ? -1 : workorder.CustomerId)).DefaultIfEmpty()
+                from user in users.Where(f => f.QBListId == tt.QBEmployeeListID).DefaultIfEmpty()
+                from servicetype in servicetypes.Where(f => f.QBListId == tt.QBServiceTypeListID).DefaultIfEmpty()
+                select new
+                {
+                    Id = tt.Id,
+                    Job = ((workorder == null) || (customer == null)) ? "" : (customer.Name + ":" + workorder.WorkOrderNumber),
+                    Type = "Time",
+                    BillableStatus = tt.BillableStatus,
+                    Date = tt.DateWorked,
+                    Item = (servicetype == null) ? "" : servicetype.Name,
+                    Description = (user == null) ? "" : user.FirstName + " " + user.LastName,
+                    Unit = tt.HoursWorked + (tt.MinutesWorked / 60.0M),
+                    Rate = (servicetype == null) ? 0M : decimal.Parse(servicetype.Price) * 1.0M,
+                    Amount = (servicetype == null) ? 0M : decimal.Parse(servicetype.Price) * (tt.HoursWorked + (tt.MinutesWorked / 60.0M)) * 1.0M,
+                    SalePrice = (servicetype == null) ? 0M : decimal.Parse(servicetype.Price) * (tt.HoursWorked + (tt.MinutesWorked / 60.0M)) * 1.0M,
+                    Comments = ""
+                };
+
+            var mileage_results =
+                from mileagetracking in mileagetrackings
+                from workorder in workorders.Where(f => f.QBListId == mileagetracking.QBWorkOrderListID).DefaultIfEmpty()
+                from customer in customers.Where(f => f.Id == (workorder == null ? -1 : workorder.CustomerId)).DefaultIfEmpty()
+                from vehicle in vehicles.Where(f => f.QBListId == mileagetracking.QBVehicleListID).DefaultIfEmpty()
+                from mileagerate in mileagerates.Where(f => f.QBListId == mileagetracking.QBMileageRateListID).DefaultIfEmpty()
+                select new
+                {
+                    Id = mileagetracking.Id,
+                    Job = ((workorder == null) || (customer == null)) ? "" : (customer.Name + ":" + workorder.WorkOrderNumber),
+                    Type = "Mileage",
+                    BillableStatus = mileagetracking.BillableStatus,
+                    Date = mileagetracking.TripStartDate,
+                    Item = mileagerate.Name,
+                    Description = (vehicle == null) ? "" : vehicle.Name,
+                    Unit = mileagetracking.TotalMiles * 1.0M,
+                    Rate = mileagerate.Rate * 1.0M,
+                    Amount = mileagetracking.BillableAmount * 1.0M,
+                    SalePrice = mileagetracking.BillableAmount * 1.0M,
+                    Comments = mileagetracking.Notes
+                };
+
+            var bill_results =
+                from billline in billLines
+                from workorder in workorders.Where(f => f.QBListId == billline.WorkOrderListID).DefaultIfEmpty()
+                from customer in customers.Where(f => f.Id == (workorder == null ? -1 : workorder.CustomerId)).DefaultIfEmpty()
+                from item in items.Where(f => f.QBListId == billline.ItemListID).DefaultIfEmpty()
+                from vendor in vendors.Where(f => f.QBListId == billline.VendorListID).DefaultIfEmpty()
+                select new
+                {
+                    Id = billline.Id,
+                    Job = ((workorder == null) || (customer == null)) ? "" : (customer.Name + ":" + workorder.WorkOrderNumber),
+                    Type = ((billline.Amount < 0) ? "Credit" : "Bill"),
+                    BillableStatus = billline.BillableStatus,
+                    Date = billline.BillTxnDate,
+                    Item = (item == null) ? "" : item.Name,
+                    Description = billline.Description,
+                    Unit = ((billline.Quantity == 0 && billline.Amount > 0 && billline.UnitCost > 0) ? (billline.Amount / billline.UnitCost) : billline.Quantity * 1.0M),
+                    Rate = billline.UnitCost * 1.0M,
+                    Amount = billline.Amount * 1.0M,
+                    //SalePrice = ((billline.Amount < 0) ? billline.Amount * 1.0M : 0.0M),
+                    SalePrice = CalculateSalePrice(billline, item),
+                    Comments = (vendor == null) ? "" : vendor.Name
+                };
+
+            var so_results =
+                from soline in soLines
+                from workorder in workorders.Where(f => f.QBListId == soline.WorkOrderListID).DefaultIfEmpty()
+                from customer in customers.Where(f => f.Id == (workorder == null ? -1 : workorder.CustomerId)).DefaultIfEmpty()
+                select new
+                {
+                    Id = soline.Id,
+                    Job = ((workorder == null) || (customer == null)) ? "" : (customer.Name + ":" + workorder.WorkOrderNumber),
+                    Type = "Sales Order",
+                    BillableStatus = soline.BillableStatus,
+                    Date = soline.SalesOrderTxnDate,
+                    Item = soline.ItemName,
+                    Description = soline.Description,
+                    Unit = soline.Quantity * 1.0M,
+                    Rate = soline.UnitCost * 1.0M,
+                    Amount = soline.Amount * 1.0M,
+                    SalePrice = soline.Amount * 1.0M,
+                    Comments = ""
+                };
+
+            var workordersummaryAll = tt_results
+                .Concat(mileage_results)
+                .Concat(bill_results)
+                .Concat(so_results)
+                .AsQueryable();
+
+            decimal totalAmount = workordersummaryAll.Sum(f => f.Amount);
+            decimal totalSalePrice = workordersummaryAll.Sum(f => f.SalePrice);
+
+            wo.EstDollarAmount = (double)totalSalePrice;
+            db.Entry(wo).State = EntityState.Modified;
+            db.SaveChanges();
+        }
+
+        private decimal CalculateSalePrice(BillLine billline, Item item)
+        {
+            if (billline == null || item == null) return 0.0M;
+
+            if (billline.Amount < 0)
+            {
+                return billline.Amount * 1.0M;
+            }
+            else
+            {
+                if (billline.BillableStatus == "NotBillable")
+                {
+                    return 0.0M;
+                }
+                else
+                {
+                    decimal salePrice = 0.0M;
+                    switch (item.Name.ToUpper())
+                    {
+                        case "PER DIEM":
+                            salePrice = billline.Amount;
+                            break;
+                        case "SALES TAX":
+                            salePrice = billline.Amount;
+                            break;
+                        case "LODG":
+                            salePrice = billline.Amount * 1.15M;
+                            break;
+                        case "AIRF":
+                            salePrice = billline.Amount * 1.15M;
+                            break;
+                        case "MEALS":
+                            salePrice = billline.Amount * 1.15M;
+                            break;
+                        case "FRT":
+                            salePrice = billline.Amount * 1.15M;
+                            break;
+                        case "FEE":
+                            salePrice = billline.Amount * 1.15M;
+                            break;
+                        case "CORECHG":
+                            salePrice = billline.Amount * 1.15M;
+                            break;
+                        case "TRAVEL":
+                            salePrice = billline.Amount * 1.15M;
+                            break;
+                        case "SPEC EQUIP":
+                            salePrice = billline.Amount * 1.20M;
+                            break;
+                        default:
+                            salePrice = billline.Amount * 1.25M;
+                            break;
+                    }
+                    return salePrice;
+                }
+            }
+            //return ((billline.Amount < 0) ? billline.Amount * 1.0M : 0.0M);
+        }
         #endregion         
 
         #region GUI Event Processing
@@ -947,8 +1201,13 @@ namespace QBMigrationTool
             aTimer.Enabled = false;
             try
             {
-                DoSync();
-                ExportItemList();
+#if !LIVE_ROTO_DB_SYNC
+                    DoSync();
+                    ExportItemList();
+#else
+
+                UpdateEstDollarAmountForAllWorkOrders();
+#endif
             }
             catch (Exception ex)
             {
@@ -962,8 +1221,32 @@ namespace QBMigrationTool
         {
             try
             {
-                DoSync();
-                ExportItemList();
+#if !LIVE_ROTO_DB_SYNC
+                    DoSync();
+                    ExportItemList();
+#else
+                UpdateEstDollarAmountForAllWorkOrders(true);
+#endif
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (Exception exSub in ex.LoaderExceptions)
+                {
+                    sb.AppendLine(exSub.Message);
+                    FileNotFoundException exFileNotFound = exSub as FileNotFoundException;
+                    if (exFileNotFound != null)
+                    {
+                        if (!string.IsNullOrEmpty(exFileNotFound.FusionLog))
+                        {
+                            sb.AppendLine("Fusion Log:");
+                            sb.AppendLine(exFileNotFound.FusionLog);
+                        }
+                    }
+                    sb.AppendLine();
+                }
+                string errorMessage = sb.ToString();
+                AppendStatus(errorMessage);
             }
             catch (Exception ex)
             {
@@ -990,8 +1273,12 @@ namespace QBMigrationTool
 
                 try
                 {
+#if !LIVE_ROTO_DB_SYNC
                     DoSync();
                     ExportItemList();
+#else
+                    UpdateEstDollarAmountForAllWorkOrders();
+#endif
                 }
                 catch (Exception ex)
                 {
@@ -1060,6 +1347,7 @@ namespace QBMigrationTool
 
         private void Exit_Click(object sender, System.EventArgs e)
         {
+            this.stopUpdateAmountThread = true;
             this.Close();
         }
         #endregion
