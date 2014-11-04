@@ -42,6 +42,7 @@ namespace QBMigrationTool
         #region Member Data
         private bool stopUpdateAmountThread;
         private Thread updateAmountThread = null;
+        private bool updateAmountThreadBusy = false;
         private System.Timers.Timer aTimer;
 		private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button Exit;
@@ -955,34 +956,49 @@ namespace QBMigrationTool
 
         private void UpdateEstDollarAmountForAllWorkOrders(bool force=false)
         {
-            bool doUpdate = false;
-            DateTime nowTime = DateTime.Now;
-            DateTime startTime = DateTime.Today.AddHours(2).AddMinutes(45);
-            DateTime endTime = DateTime.Today.AddHours(3).AddMinutes(0);
-
-            AppendStatus("NOTE: Update Dollar amounts is enabled nightly only for auto sync from " + startTime.ToString() + " to " + endTime.ToString());
-            AppendStatus(Environment.NewLine);
-                        
-            if (nowTime > startTime && nowTime < endTime)
+            if (this.updateAmountThreadBusy)
             {
-                doUpdate = true;    
+                AppendStatus("NOTE: Update Dollar amounts already in progress.  Skipping.");
+                AppendStatus(Environment.NewLine);
             }
-            else if (force)
+            else
             {
-                doUpdate = true;
-            }
+                bool doUpdate = false;
+                DateTime nowTime = DateTime.Now;
+                DateTime startTime = DateTime.Today.AddHours(2).AddMinutes(45);
+                DateTime endTime = DateTime.Today.AddHours(3).AddMinutes(0);
+                
+                if (nowTime > startTime && nowTime < endTime)
+                {
+                    doUpdate = true;
+                    AppendStatus("Update Dollar amounts starting within allowed time slot: "+ DateTime.Now.ToString());
+                    AppendStatus(Environment.NewLine);
+                }
+                else if (force)
+                {
+                    doUpdate = true;
+                    AppendStatus("Update Dollar amounts is being forced started now: " + DateTime.Now.ToString());
+                    AppendStatus(Environment.NewLine);
+                }
+                else
+                {
+                    doUpdate = false;
+                    AppendStatus("Update Dollar amounts, triggered by autosync, is only enabled nightly from " + startTime.ToString() + " to " + endTime.ToString() + ". Skipping.");
+                    AppendStatus(Environment.NewLine);
+                }
 
-            if (doUpdate)
-            {                
-                this.updateAmountThread = new Thread(new ThreadStart(this.UpdateEstDollarAmountForAllWorkOrdersThread));
-                this.updateAmountThread.Start();
+                if (doUpdate)
+                {
+                    this.updateAmountThread = new Thread(new ThreadStart(this.UpdateEstDollarAmountForAllWorkOrdersThread));
+                    this.updateAmountThread.Start();
+                }
             }
         }
 
         private void UpdateEstDollarAmountForAllWorkOrdersThread()
         {
-            AppendStatus("Sync Est Dollar Amounts..." + Environment.NewLine);
-
+            this.updateAmountThreadBusy = true;
+            
             RotoTrackDb db = new RotoTrackDb();
 
             // Get active work orders that have a QBListID set
@@ -1005,6 +1021,7 @@ namespace QBMigrationTool
             }
 
             AppendStatus("Done" + Environment.NewLine);
+            this.updateAmountThreadBusy = false;
         }
 
         private void UpdateEstDollarAmountForWorkOrder(int woID)
