@@ -1002,7 +1002,7 @@ namespace QBMigrationTool
             RotoTrackDb db = new RotoTrackDb();
 
             // Get active work orders that have a QBListID set
-            List<WorkOrder> woList = db.WorkOrders.Where(wo => wo.QBListId != null && wo.statusValue != (int)WorkOrderStatus.Inactive).ToList();
+            List<WorkOrder> woList = db.WorkOrders.Where(wo => wo.QBListId != null && (wo.statusValue == (int)WorkOrderStatus.Open || wo.statusValue == (int)WorkOrderStatus.PreClose || wo.statusValue == (int)WorkOrderStatus.PendingApproval || wo.statusValue == (int)WorkOrderStatus.ReadyToInvoice)).ToList();
 
             int totalWo = woList.Count;
             int currentWo = 1;
