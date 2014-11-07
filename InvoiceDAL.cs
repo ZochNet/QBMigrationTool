@@ -207,7 +207,7 @@ namespace QBMigrationTool
             }
             */
 
-            db.SaveChanges();
+            //db.SaveChanges();
             
             /*
             //Get all field values for ARAccountRef aggregate 
@@ -565,13 +565,22 @@ namespace QBMigrationTool
 
             }
             //Done with field values for ShipMethodRef aggregate
+            */
 
             //Get value of Subtotal
             if (InvoiceRet.SelectSingleNode("./Subtotal") != null)
             {
                 string Subtotal = InvoiceRet.SelectSingleNode("./Subtotal").InnerText;
-
+                double SubtotalOut;
+                double SubtotalDouble = 0;
+                if (Double.TryParse(Subtotal, out SubtotalOut))
+                {
+                    SubtotalDouble = SubtotalOut;
+                }
+                invoice.Subtotal = SubtotalDouble;
             }
+
+            /*
             //Get all field values for ItemSalesTaxRef aggregate 
             XmlNode ItemSalesTaxRef = InvoiceRet.SelectSingleNode("./ItemSalesTaxRef");
             if (ItemSalesTaxRef != null)
@@ -1338,6 +1347,8 @@ namespace QBMigrationTool
                 }
             }
             */
+
+            db.SaveChanges();
         }
 
         private static Invoice FindOrCreateInvoice(RotoTrackDb db, string TxnID, string TimeCreated, string TimeModified, string EditSequence)

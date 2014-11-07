@@ -941,7 +941,9 @@ namespace QBMigrationTool
             SalesOrderDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
 
-            AppendStatus("Sync Invoices...");              
+            AppendStatus("Sync Invoices...");
+
+            //doc = InvoiceDAL.BuildQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -600, false), toDateTime);
             doc = InvoiceDAL.BuildQueryRequest(fromDateTime, toDateTime);
             response = SyncDataHelper(doc);
             AppendStatus("Done" + Environment.NewLine + "Processing...");
@@ -1002,7 +1004,7 @@ namespace QBMigrationTool
             RotoTrackDb db = new RotoTrackDb();
 
             // Get active work orders that have a QBListID set
-            List<WorkOrder> woList = db.WorkOrders.Where(wo => wo.QBListId != null && (wo.statusValue == (int)WorkOrderStatus.Open || wo.statusValue == (int)WorkOrderStatus.PreClose || wo.statusValue == (int)WorkOrderStatus.PendingApproval || wo.statusValue == (int)WorkOrderStatus.ReadyToInvoice)).ToList();
+            List<WorkOrder> woList = db.WorkOrders.Where(wo => wo.QBListId != null && (wo.statusValue == (int)WorkOrderStatus.Open || wo.statusValue == (int)WorkOrderStatus.PreClose || wo.statusValue == (int)WorkOrderStatus.PendingApproval || wo.statusValue == (int)WorkOrderStatus.ReadyToInvoice || wo.statusValue == (int)WorkOrderStatus.Invoiced)).ToList();
 
             int totalWo = woList.Count;
             int currentWo = 1;
@@ -1011,7 +1013,16 @@ namespace QBMigrationTool
             foreach (WorkOrder wo in woList) {
                 //WorkOrder wo = woList.ToArray()[i];
                 AppendStatus("Syncing " + currentWo.ToString() + " of " + totalWo.ToString() + Environment.NewLine);
-                UpdateEstDollarAmountForWorkOrder(wo.Id);
+
+                if (wo.Status == WorkOrderStatus.Invoiced)
+                {
+                    UpdateInvoiceSubtotal(wo.Id);
+                }
+                else
+                {
+                    UpdateEstDollarAmountForWorkOrder(wo.Id);
+                }
+
                 currentWo++;
 
                 if (this.stopUpdateAmountThread)
@@ -1022,6 +1033,29 @@ namespace QBMigrationTool
 
             AppendStatus("Done" + Environment.NewLine);
             this.updateAmountThreadBusy = false;
+        }
+
+        private void UpdateInvoiceSubtotal(int woID)
+        {
+            RotoTrackDb db = new RotoTrackDb();
+
+            WorkOrder wo = db.WorkOrders.Find(woID);
+
+            // Do invoice subtotal
+            double invoiceSubtotal = 0.0;
+            if (db.Invoices.Any(f => f.WorkOrderListID == wo.QBListId))
+            {
+                List<Invoice> invoiceList = db.Invoices.Where(f => f.WorkOrderListID == wo.QBListId).ToList();
+                foreach (Invoice invoice in invoiceList)
+                {
+                    invoiceSubtotal += invoice.Subtotal;
+                }
+            }
+
+            wo.InvoiceSubtotal = invoiceSubtotal;
+
+            db.Entry(wo).State = EntityState.Modified;
+            db.SaveChanges();
         }
 
         private void UpdateEstDollarAmountForWorkOrder(int woID)
@@ -1154,7 +1188,7 @@ namespace QBMigrationTool
             {
                 wo.EstDollarAmount *= -1.0;
             }
-
+                      
             db.Entry(wo).State = EntityState.Modified;
             db.SaveChanges();
         }
