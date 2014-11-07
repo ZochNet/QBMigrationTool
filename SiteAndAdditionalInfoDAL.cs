@@ -92,6 +92,10 @@ namespace QBMigrationTool
                 case CloseStatus.Warranty:
                     doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Warranty");
                     break;
+
+                case CloseStatus.RnDResearchAndDev:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "R&D-Research & Development");
+                    break;
                     
                 default:
                     doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "");
