@@ -1149,6 +1149,12 @@ namespace QBMigrationTool
             decimal totalSalePrice = workordersummaryAll.Sum(f => f.SalePrice);
 
             wo.EstDollarAmount = (double)totalSalePrice;
+
+            if (wo.CloseStatus == CloseStatus.Warranty)
+            {
+                wo.EstDollarAmount *= -1.0;
+            }
+
             db.Entry(wo).State = EntityState.Modified;
             db.SaveChanges();
         }
