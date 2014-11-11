@@ -1034,6 +1034,19 @@ namespace QBMigrationTool
             AppendStatus("Done" + Environment.NewLine);
             this.updateAmountThreadBusy = false;
         }
+        /*
+        public static IEnumerable<t> DistinctBy<t>(this IEnumerable<t> list, Func<t, object> propertySelector)
+        {
+            return list.GroupBy(propertySelector).Select(x => x.First());
+        }
+        */
+        public class DistinctInvoice
+        {
+            public string TxnId { get; set; }
+            public DateTime TimeModified { get; set; }
+            public string WorkOrderListId { get; set; }
+            public double Subtotal { get; set; }
+        }
 
         private void UpdateInvoiceSubtotal(int woID)
         {
@@ -1045,10 +1058,17 @@ namespace QBMigrationTool
             double invoiceSubtotal = 0.0;
             if (db.Invoices.Any(f => f.WorkOrderListID == wo.QBListId))
             {
-                List<Invoice> invoiceList = db.Invoices.Where(f => f.WorkOrderListID == wo.QBListId).ToList();
-                foreach (Invoice invoice in invoiceList)
+                string query = "select distinct TxnId,TimeModified,WorkOrderListId,Subtotal from invoices i inner join WorkOrders w on w.QBListId = i.WorkOrderListID where i.Subtotal > 0 and i.WorkOrderListID = '";
+                query += wo.QBListId;
+                query += "'";
+
+                List<DistinctInvoice> invoices = db.Database.SqlQuery<DistinctInvoice>(query).ToList();
+
+                //List<Invoice> invoiceList = db.Invoices.Where(f => f.WorkOrderListID == wo.QBListId).ToList();
+                foreach (DistinctInvoice invoice in invoices)
                 {
                     invoiceSubtotal += invoice.Subtotal;
+                    wo.InvoiceCreated = invoice.TimeModified;
                 }
             }
 
@@ -1281,7 +1301,7 @@ namespace QBMigrationTool
             {
 #if !LIVE_ROTO_DB_SYNC
                     DoSync();
-                    ExportItemList();
+                    ExportItemList();                    
 #else
                 UpdateEstDollarAmountForAllWorkOrders(true);
 #endif

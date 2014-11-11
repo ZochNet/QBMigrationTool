@@ -250,8 +250,11 @@ namespace QBMigrationTool
             }
             //Done with field values for TemplateRef aggregate
 
+            */
             //Get value of TxnDate
             string TxnDate = InvoiceRet.SelectSingleNode("./TxnDate").InnerText;
+             
+            /*
             //Get value of RefNumber
             if (InvoiceRet.SelectSingleNode("./RefNumber") != null)
             {
