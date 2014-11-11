@@ -1043,7 +1043,7 @@ namespace QBMigrationTool
         public class DistinctInvoice
         {
             public string TxnId { get; set; }
-            public DateTime TimeModified { get; set; }
+            public DateTime TimeCreated { get; set; }
             public string WorkOrderListId { get; set; }
             public double Subtotal { get; set; }
         }
@@ -1057,10 +1057,8 @@ namespace QBMigrationTool
             // Do invoice subtotal
             double invoiceSubtotal = 0.0;
             if (db.Invoices.Any(f => f.WorkOrderListID == wo.QBListId))
-            {
-                string query = "select distinct TxnId,TimeModified,WorkOrderListId,Subtotal from invoices i inner join WorkOrders w on w.QBListId = i.WorkOrderListID where i.Subtotal > 0 and i.WorkOrderListID = '";
-                query += wo.QBListId;
-                query += "'";
+            {                
+                string query = "select i.TxnId, i.TimeCreated, i.WorkOrderListID, i.Subtotal from invoices i inner join (select max(i.id) as id from Invoices i inner join WorkOrders w on w.QBListId = i.WorkOrderListID where i.WorkOrderListID = '" + wo.QBListId + "' group by i.TxnId, i.TimeCreated, i.WorkOrderListID) iv on iv.id = i.Id";
 
                 List<DistinctInvoice> invoices = db.Database.SqlQuery<DistinctInvoice>(query).ToList();
 
@@ -1068,7 +1066,7 @@ namespace QBMigrationTool
                 foreach (DistinctInvoice invoice in invoices)
                 {
                     invoiceSubtotal += invoice.Subtotal;
-                    wo.InvoiceCreated = invoice.TimeModified;
+                    wo.InvoiceCreated = invoice.TimeCreated;
                 }
             }
 
