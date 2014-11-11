@@ -253,6 +253,8 @@ namespace QBMigrationTool
             */
             //Get value of TxnDate
             string TxnDate = InvoiceRet.SelectSingleNode("./TxnDate").InnerText;
+            DateTime txnDate;
+            if (DateTime.TryParse(TxnDate, out txnDate)) invoice.TxnDate = txnDate;
              
             /*
             //Get value of RefNumber
