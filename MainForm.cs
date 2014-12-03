@@ -853,7 +853,9 @@ namespace QBMigrationTool
             ClassDAL.HandleResponse(response);
             AppendStatus("Done" + Environment.NewLine);
 
-            AppendStatus("Sync Employees...");              
+            AppendStatus("Sync Employees...");
+
+            //string fromDateTimeOld = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -600, false);
             doc = EmployeeDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime, ownerID);
             response = SyncDataHelper(doc);
             AppendStatus("Done" + Environment.NewLine + "Processing...");

@@ -125,6 +125,180 @@ namespace QBMigrationTool
                 emp.Email = Email;
             }
 
+            //Get all field values for EmployeePayrollInfo aggregate 
+            XmlNode EmployeePayrollInfo = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo");
+            if (EmployeePayrollInfo != null)
+            {
+                //Get value of PayPeriod
+                if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/PayPeriod") != null)
+                {
+                    string PayPeriod = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/PayPeriod").InnerText;
+                }
+                //Get all field values for ClassRef aggregate 
+                XmlNode ClassRef = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/ClassRef");
+                if (ClassRef != null)
+                {
+                    //Get value of ListID
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/ClassRef/ListID") != null)
+                    {
+                        string ListID2 = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/ClassRef/ListID").InnerText;
+                    }
+                    //Get value of FullName
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/ClassRef/FullName") != null)
+                    {
+                        string FullName = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/ClassRef/FullName").InnerText;
+                    }
+                }
+                //Done with field values for ClassRef aggregate
+
+                XmlNodeList OREarningsChildren = EmployeeRet.SelectNodes("./EmployeePayrollInfo/*");
+                for (int i = 0; i < OREarningsChildren.Count; i++)
+                {
+                    XmlNode Child = OREarningsChildren.Item(i);
+                    if (Child.Name == "ClearEarnings")
+                    {
+                    }
+
+                    if (Child.Name == "Earnings")
+                    {
+                        //Get all field values for PayrollItemWageRef aggregate 
+                        //Get value of ListID
+                        if (Child.SelectSingleNode("./PayrollItemWageRef/ListID") != null)
+                        {
+                            string ListID3 = Child.SelectSingleNode("./PayrollItemWageRef/ListID").InnerText;
+                        }
+                        //Get value of FullName
+                        if (Child.SelectSingleNode("./PayrollItemWageRef/FullName") != null)
+                        {
+                            string FullName = Child.SelectSingleNode("./PayrollItemWageRef/FullName").InnerText;
+                        }
+                        //Done with field values for PayrollItemWageRef aggregate
+
+                        XmlNodeList ORRateChildren = Child.SelectNodes("./*");
+                        for (int j = 0; j < ORRateChildren.Count; j++)
+                        {
+                            XmlNode Child2 = ORRateChildren.Item(j);
+                            if (Child2.Name == "Rate")
+                            {
+                            }
+
+                            if (Child2.Name == "RatePercent")
+                            {
+                            }
+                        }
+                    }
+                }
+
+                //Get value of IsUsingTimeDataToCreatePaychecks
+                if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/IsUsingTimeDataToCreatePaychecks") != null)
+                {
+                    string IsUsingTimeDataToCreatePaychecks = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/IsUsingTimeDataToCreatePaychecks").InnerText;
+                }
+                //Get value of UseTimeDataToCreatePaychecks
+                if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/UseTimeDataToCreatePaychecks") != null)
+                {
+                    string UseTimeDataToCreatePaychecks = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/UseTimeDataToCreatePaychecks").InnerText;
+                }
+                //Get all field values for SickHours aggregate 
+                XmlNode SickHours = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours");
+                if (SickHours != null)
+                {
+                    //Get value of HoursAvailable
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/HoursAvailable") != null)
+                    {
+                        string HoursAvailable = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/HoursAvailable").InnerText;
+                    }
+                    //Get value of AccrualPeriod
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/AccrualPeriod") != null)
+                    {
+                        string AccrualPeriod = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/AccrualPeriod").InnerText;
+                    }
+                    //Get value of HoursAccrued
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/HoursAccrued") != null)
+                    {
+                        string HoursAccrued = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/HoursAccrued").InnerText;
+                        // Store sick hours accrued at beginning of year.
+                        emp.SickHoursAnnualAccrual = 0;
+                        decimal sickHoursAnnualAccrual;
+                        if (Decimal.TryParse(HoursAccrued, out sickHoursAnnualAccrual))
+                        {
+                            emp.SickHoursAnnualAccrual = sickHoursAnnualAccrual;
+                        }
+                    }
+                    //Get value of MaximumHours
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/MaximumHours") != null)
+                    {
+                        string MaximumHours = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/MaximumHours").InnerText;
+                    }
+                    //Get value of IsResettingHoursEachNewYear
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/IsResettingHoursEachNewYear") != null)
+                    {
+                        string IsResettingHoursEachNewYear = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/IsResettingHoursEachNewYear").InnerText;
+                    }
+                    //Get value of HoursUsed
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/HoursUsed") != null)
+                    {
+                        string HoursUsed = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/HoursUsed").InnerText;
+                    }
+                    //Get value of AccrualStartDate
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/AccrualStartDate") != null)
+                    {
+                        string AccrualStartDate = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/AccrualStartDate").InnerText;
+                    }
+                }
+                //Done with field values for SickHours aggregate
+
+                //Get all field values for VacationHours aggregate 
+                XmlNode VacationHours = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours");
+                if (VacationHours != null)
+                {
+                    //Get value of HoursAvailable
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursAvailable") != null)
+                    {
+                        string HoursAvailable = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursAvailable").InnerText;
+                    }
+                    //Get value of AccrualPeriod
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/AccrualPeriod") != null)
+                    {
+                        string AccrualPeriod = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/AccrualPeriod").InnerText;
+                    }
+                    //Get value of HoursAccrued
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursAccrued") != null)
+                    {
+                        string HoursAccrued = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursAccrued").InnerText;
+                        // Store vac hours accrued each year
+                        emp.VacationHoursAnnualAccrual = 0;
+                        decimal vacHoursAnnualAccrual;
+                        if (Decimal.TryParse(HoursAccrued, out vacHoursAnnualAccrual))
+                        {
+                            emp.VacationHoursAnnualAccrual = vacHoursAnnualAccrual;
+                        }
+                    }
+                    //Get value of MaximumHours
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/MaximumHours") != null)
+                    {
+                        string MaximumHours = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/MaximumHours").InnerText;
+                    }
+                    //Get value of IsResettingHoursEachNewYear
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/IsResettingHoursEachNewYear") != null)
+                    {
+                        string IsResettingHoursEachNewYear = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/IsResettingHoursEachNewYear").InnerText;
+                    }
+                    //Get value of HoursUsed
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursUsed") != null)
+                    {
+                        string HoursUsed = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursUsed").InnerText;
+                    }
+                    //Get value of AccrualStartDate
+                    if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/AccrualStartDate") != null)
+                    {
+                        string AccrualStartDate = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/AccrualStartDate").InnerText;
+                    }
+                }
+                //Done with field values for VacationHours aggregate
+            }
+            //Done with field values for EmployeePayrollInfo aggregate
+
             Area area = GetAreaFromEmployeeRet(EmployeeRet);
             emp.AreaId = area.Id;
 
