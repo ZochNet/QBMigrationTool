@@ -936,6 +936,16 @@ namespace QBMigrationTool
             BillDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
 
+            AppendStatus("Sync Credits...");              
+            doc = VendorCreditDAL.BuildQueryRequest(fromDateTime, toDateTime);
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
+            VendorCreditDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
+            AppendStatus("Removing deleted Credits...");
+            VendorCreditDAL.RemoveDeleted();
+            AppendStatus("Done" + Environment.NewLine);
+
             AppendStatus("Sync Sales Orders...");              
             doc = SalesOrderDAL.BuildQueryRequest(fromDateTime, toDateTime);
             response = SyncDataHelper(doc);

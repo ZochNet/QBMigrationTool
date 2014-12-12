@@ -172,6 +172,7 @@
     </Compile>
     <Compile Include="BillDAL.cs" />
     <Compile Include="ClassDAL.cs" />
+    <Compile Include="VendorCreditDAL.cs" />
     <Compile Include="CustomerDAL.cs" />
     <Compile Include="CustomerTypeDAL.cs" />
     <Compile Include="DSRLite.cs" />
