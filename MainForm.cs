@@ -969,6 +969,8 @@ namespace QBMigrationTool
             AppendStatus("Done" + Environment.NewLine);
             
             AppConfig.SetLastSyncTime(DateTime.Now);
+
+            Logging.RototrackErrorLog("Sync Complete");
         }
 
         private void UpdateEstDollarAmountForAllWorkOrders(bool force=false)
@@ -1109,6 +1111,9 @@ namespace QBMigrationTool
             List<BillLine> billLines;
             billLines = db.BillLines.Where(f => f.WorkOrderListID == woListID).ToList();
 
+            List<VendorCreditLine> vendorCreditLines;
+            vendorCreditLines = db.VendorCreditLines.Where(f => f.WorkOrderListID == woListID).ToList();
+
             List<SalesOrderLine> soLines;
             soLines = db.SalesOrderLines.Where(f => f.WorkOrderListID == woListID).ToList();
 
@@ -1188,6 +1193,29 @@ namespace QBMigrationTool
                     Comments = (vendor == null) ? "" : vendor.Name
                 };
 
+            var vendor_credit_results =
+                from vendorcreditline in vendorCreditLines
+                from workorder in workorders.Where(f => f.QBListId == vendorcreditline.WorkOrderListID).DefaultIfEmpty()
+                from customer in customers.Where(f => f.Id == (workorder == null ? -1 : workorder.CustomerId)).DefaultIfEmpty()
+                from item in items.Where(f => f.QBListId == vendorcreditline.ItemListID).DefaultIfEmpty()
+                from vendor in vendors.Where(f => f.QBListId == vendorcreditline.VendorListID).DefaultIfEmpty()
+                select new
+                {
+                    Id = vendorcreditline.Id,
+                    Job = ((workorder == null) || (customer == null)) ? "" : (customer.Name + ":" + workorder.WorkOrderNumber),
+                    Type = "Credit",
+                    BillableStatus = vendorcreditline.BillableStatus,
+                    Date = vendorcreditline.VendorCreditTxnDate,
+                    Item = (item == null) ? "" : item.Name,
+                    Description = vendorcreditline.Description,
+                    Unit = ((vendorcreditline.Quantity == 0 && vendorcreditline.Amount > 0 && vendorcreditline.UnitCost > 0) ? (vendorcreditline.Amount / vendorcreditline.UnitCost) : vendorcreditline.Quantity * 1.0M),
+                    Rate = vendorcreditline.UnitCost * -1.0M,
+                    Amount = vendorcreditline.Amount * -1.0M,
+                    //SalePrice = ((billline.Amount < 0) ? billline.Amount * 1.0M : 0.0M),
+                    SalePrice = CalculateSalePrice(vendorcreditline, item) * -1.0M,
+                    Comments = (vendor == null) ? "" : vendor.Name
+                };
+
             var so_results =
                 from soline in soLines
                 from workorder in workorders.Where(f => f.QBListId == soline.WorkOrderListID).DefaultIfEmpty()
@@ -1211,6 +1239,7 @@ namespace QBMigrationTool
             var workordersummaryAll = tt_results
                 .Concat(mileage_results)
                 .Concat(bill_results)
+                .Concat(vendor_credit_results)
                 .Concat(so_results)
                 .AsQueryable();
 
@@ -1227,18 +1256,30 @@ namespace QBMigrationTool
             db.Entry(wo).State = EntityState.Modified;
             db.SaveChanges();
         }
-
+               
         private decimal CalculateSalePrice(BillLine billline, Item item)
         {
             if (billline == null || item == null) return 0.0M;
 
-            if (billline.Amount < 0)
+            return CalculateSalePrice(billline.BillableStatus, billline.Amount, item);
+        }
+
+        private decimal CalculateSalePrice(VendorCreditLine vendorcreditline, Item item)
+        {
+            if (vendorcreditline == null || item == null) return 0.0M;
+
+            return CalculateSalePrice(vendorcreditline.BillableStatus, vendorcreditline.Amount, item);
+        }
+
+        private decimal CalculateSalePrice(string BillableStatus, decimal Amount, Item item)
+        {
+            if (Amount < 0)
             {
-                return billline.Amount * 1.0M;
+                return Amount * 1.0M;
             }
             else
             {
-                if (billline.BillableStatus == "NotBillable")
+                if (BillableStatus == "NotBillable")
                 {
                     return 0.0M;
                 }
@@ -1248,43 +1289,42 @@ namespace QBMigrationTool
                     switch (item.Name.ToUpper())
                     {
                         case "PER DIEM":
-                            salePrice = billline.Amount;
+                            salePrice = Amount;
                             break;
                         case "SALES TAX":
-                            salePrice = billline.Amount;
+                            salePrice = Amount;
                             break;
                         case "LODG":
-                            salePrice = billline.Amount * 1.15M;
+                            salePrice = Amount * 1.15M;
                             break;
                         case "AIRF":
-                            salePrice = billline.Amount * 1.15M;
+                            salePrice = Amount * 1.15M;
                             break;
                         case "MEALS":
-                            salePrice = billline.Amount * 1.15M;
+                            salePrice = Amount * 1.15M;
                             break;
                         case "FRT":
-                            salePrice = billline.Amount * 1.15M;
+                            salePrice = Amount * 1.15M;
                             break;
                         case "FEE":
-                            salePrice = billline.Amount * 1.15M;
+                            salePrice = Amount * 1.15M;
                             break;
                         case "CORECHG":
-                            salePrice = billline.Amount * 1.15M;
+                            salePrice = Amount * 1.15M;
                             break;
                         case "TRAVEL":
-                            salePrice = billline.Amount * 1.15M;
+                            salePrice = Amount * 1.15M;
                             break;
                         case "SPEC EQUIP":
-                            salePrice = billline.Amount * 1.20M;
+                            salePrice = Amount * 1.20M;
                             break;
                         default:
-                            salePrice = billline.Amount * 1.25M;
+                            salePrice = Amount * 1.25M;
                             break;
                     }
                     return salePrice;
                 }
             }
-            //return ((billline.Amount < 0) ? billline.Amount * 1.0M : 0.0M);
         }
         #endregion         
 
