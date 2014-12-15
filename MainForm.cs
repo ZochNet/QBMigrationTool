@@ -970,7 +970,7 @@ namespace QBMigrationTool
             
             AppConfig.SetLastSyncTime(DateTime.Now);
 
-            Logging.RototrackErrorLog("Sync Complete");
+            Logging.RototrackErrorLog("Sync Complete", "Info");
         }
 
         private void UpdateEstDollarAmountForAllWorkOrders(bool force=false)
