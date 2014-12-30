@@ -813,21 +813,21 @@ namespace QBMigrationTool
         {
             RotoTrackDb db = new RotoTrackDb();
             List<Item> ItemData = db.Items.Where(f => (f.ItemType == "ItemInventory" || f.ItemType == "ItemInventoryAssembly") && f.IsActive).ToList();
-            string csv = "Type, Name, Description, Average Cost" + Environment.NewLine;
+            string csv = "Name, Type, Description, Average Cost" + Environment.NewLine;
             foreach (Item item in ItemData)
             {
-                string type = "";
                 string name = "";
+                string type = "";                
                 string description = "";
                 string averageCost = "";
 
-                if (item.ItemType != null) type = item.ItemType.Replace("'", "''").Replace("\"", "\"\"");
                 if (item.Name != null) name = item.Name.Replace("'", "''").Replace("\"", "\"\"");
+                if (item.ItemType != null) type = item.ItemType.Replace("'", "''").Replace("\"", "\"\"");                
                 if (item.Description != null) description = item.Description.Replace("'", "''").Replace("\"", "\"\"");
                 averageCost = item.AverageCost.ToString();
 
-                csv += "\"" + type + "\",";
                 csv += "\"" + name + "\",";
+                csv += "\"" + type + "\",";                
                 csv += "\"" + description + "\",";                
                 csv += "\"" + averageCost + "\"" + Environment.NewLine;
             }
