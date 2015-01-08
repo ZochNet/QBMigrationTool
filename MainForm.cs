@@ -414,7 +414,7 @@ namespace QBMigrationTool
 
             if (!status)
             {
-                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Failed to update work order for WO#: " + wo.WorkOrderNumber + " ListID: " + wo.QBListId + ".  Setting NeedToUpdateQB flag to true to try again.");
+                //Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Failed to update work order for WO#: " + wo.WorkOrderNumber + " ListID: " + wo.QBListId + ".  Setting NeedToUpdateQB flag to true to try again.");
                 wo.NeedToUpdateQB = true;
                 db.Entry(wo).State = EntityState.Modified;
                 db.SaveChanges();
@@ -446,7 +446,7 @@ namespace QBMigrationTool
 
             if (!status)
             {
-                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Failed to update site and additional info for WO#: " + wo.WorkOrderNumber + " ListID: " + wo.QBListId + ".  Setting NeedToUpdateQB flag to true to try again.");
+                //Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Failed to update site and additional info for WO#: " + wo.WorkOrderNumber + " ListID: " + wo.QBListId + ".  Setting NeedToUpdateQB flag to true to try again.");
                 wo.NeedToUpdateQB = true;
                 db.Entry(wo).State = EntityState.Modified;
                 db.SaveChanges();
@@ -970,7 +970,7 @@ namespace QBMigrationTool
             
             AppConfig.SetLastSyncTime(DateTime.Now);
 
-            Logging.RototrackErrorLog("Sync Complete", "Info");
+            //Logging.RototrackErrorLog("Sync Complete", "Info");
         }
 
         private void UpdateEstDollarAmountForAllWorkOrders(bool force=false)
