@@ -235,6 +235,8 @@ namespace QBMigrationTool
         
         private static void WalkCustomerAddRs(string response)
         {
+            if (response == null) return;
+
             //Parse the response XML string into an XmlDocument
             XmlDocument responseXmlDoc = new XmlDocument();
             responseXmlDoc.LoadXml(response);

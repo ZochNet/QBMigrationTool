@@ -14,7 +14,7 @@ namespace QBMigrationTool
     public class QBUtils
     {
         public static string DoRequest(XmlDocument doc)
-        {
+        {   
             RequestProcessor2 rp = null;
             string ticket = null;
             string response = null;
@@ -42,6 +42,7 @@ namespace QBMigrationTool
                 catch (System.Runtime.InteropServices.COMException e)
                 {
                     Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Error in DoRequest.  Retrying.  Details: " + e.ToString());
+                    MessageBox.Show("Outer: " + doc.OuterXml);
                     errorOccurred = true;
                 }
                 catch (Exception e)

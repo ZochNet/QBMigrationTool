@@ -630,20 +630,23 @@ namespace QBMigrationTool
             List<WorkOrder> woList = null;
 
             AppendStatus("Syncing Work Orders...");                    
-
+            
             // First, all new CustomerTypes (Billing Instructions)
             List<BillingInstruction> biList = db.BillingInstructions.Where(bi => bi.QBListId == null).ToList();
             foreach (BillingInstruction bi in biList)
-            {                
+            {
+                AppendStatus("Add customer type " + bi.Id.ToString());
                 AddCustomerType(bi.Id);
 
                 // Find and add workorders that need to be added that referred to this
                 woList = db.WorkOrders.Where(wo => wo.QBListId == null && wo.BillingInstructionsId == bi.Id).ToList();
                 foreach (WorkOrder wo in woList)
                 {
+                    AppendStatus("Add wo " + wo.Id.ToString());
                     AddWorkOrder(wo.Id);
                     // Evertime we add a work order, we have to immediately follow up with an update to the work order and the site--QB quirkiness
-                    // But first, get the latest copy from the database            
+                    // But first, get the latest copy from the database     
+                    AppendStatus("Update wo " + wo.Id.ToString());
                     if (UpdateWorkOrder(wo.Id))
                     {
                         UpdateSiteAndAdditionalInfo(wo.Id);
@@ -660,17 +663,19 @@ namespace QBMigrationTool
                 // is successfully added to QB as a result of a request above
                 BillingInstruction bi = db.BillingInstructions.Find(wo.BillingInstructionsId);
                 if (bi.QBListId != null)
-                {                    
+                {
+                    AppendStatus("Add wo " + wo.Id.ToString());
                     AddWorkOrder(wo.Id);
                     // Evertime we add a work order, we have to immediately follow up with an update to the work order and the site--QB quirkiness
-                    // But first, get the latest copy from the database            
+                    // But first, get the latest copy from the database    
+                    AppendStatus("Update wo " + wo.Id.ToString());
                     if (UpdateWorkOrder(wo.Id))
                     {
                         UpdateSiteAndAdditionalInfo(wo.Id);
                     }
                 }
             }
-
+            
             // Next, all the work orders that need to be updated in Quickbooks where QBListId is not null
             woList = db.WorkOrders.Where(wo => wo.NeedToUpdateQB == true && wo.QBListId != null).ToList();
             foreach (WorkOrder wo in woList)
