@@ -589,6 +589,7 @@ namespace QBMigrationTool
             SyncWorkOrders();
             SyncDSRs();
             RemoveDSRTimeAndMileage();
+            SyncVacationAndSickTime();
 
             int numUnsyncedWorkOrders = GetNumUnsyncedWorkOrders();
             int numUnsyncedDSRs = GetNumUnsyncedDSRs();
@@ -796,6 +797,24 @@ namespace QBMigrationTool
             // Due to buggy mileage handling in QB, remove any deleted mileage trackings that still exist.
             db.Database.ExecuteSqlCommand("delete from MileageTrackings where QBTxnId in (select QBTxnId from DeletedMileageTrackings)");
             
+            AppendStatus("Done");
+            AppendStatus(Environment.NewLine);
+        }
+
+        private void SyncVacationAndSickTime()
+        {
+            AppendStatus("Syncing Vacation and Sick Time...");
+
+            RotoTrackDb db = new RotoTrackDb();
+
+            List<Employee> employees = db.Employees.Where(f => f.IsActive == true).ToList();
+            foreach (Employee e in employees)
+            {
+                RotoTrackDbUtils.ComputeVacationFields(e);
+                db.Entry(e).State = EntityState.Modified;
+                db.SaveChanges();
+            }
+                        
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);
         }
@@ -1324,7 +1343,7 @@ namespace QBMigrationTool
                             salePrice = Amount * 1.20M;
                             break;
                         default:
-                            salePrice = Amount * 1.25M;
+                            salePrice = Amount * 1.30M;
                             break;
                     }
                     return salePrice;
