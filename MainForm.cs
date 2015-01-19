@@ -794,8 +794,9 @@ namespace QBMigrationTool
                 }
             }
 
-            // Due to buggy mileage handling in QB, remove any deleted mileage trackings that still exist.
+            // Due to buggy time and  mileage handling in QB, remove any deleted time or mileage trackings that still exist.
             db.Database.ExecuteSqlCommand("delete from MileageTrackings where QBTxnId in (select QBTxnId from DeletedMileageTrackings)");
+            db.Database.ExecuteSqlCommand("delete from TimeTrackings where QBTxnId in (select QBTxnId from DeletedTimeTrackings)");
             
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);
