@@ -124,6 +124,15 @@ namespace QBMigrationTool
                 string Email = EmployeeRet.SelectSingleNode("./Email").InnerText;
                 emp.Email = Email;
             }
+            if (EmployeeRet.SelectSingleNode("./HiredDate") != null)
+            {
+                string HiredDate = EmployeeRet.SelectSingleNode("./HiredDate").InnerText;
+                DateTime hDate;
+                if (DateTime.TryParse(HiredDate, out hDate))
+                {
+                    emp.HireDate = hDate;
+                }
+            }
 
             //Get all field values for EmployeePayrollInfo aggregate 
             XmlNode EmployeePayrollInfo = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo");
@@ -216,14 +225,7 @@ namespace QBMigrationTool
                     //Get value of HoursAccrued
                     if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/HoursAccrued") != null)
                     {
-                        string HoursAccrued = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/HoursAccrued").InnerText;
-                        // Store sick hours accrued at beginning of year.
-                        emp.SickHoursAnnualAccrual = 0;
-                        decimal sickHoursAnnualAccrual;
-                        if (Decimal.TryParse(HoursAccrued, out sickHoursAnnualAccrual))
-                        {
-                            emp.SickHoursAnnualAccrual = sickHoursAnnualAccrual;
-                        }
+                        string HoursAccrued = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/HoursAccrued").InnerText;                        
                     }
                     //Get value of MaximumHours
                     if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/SickHours/MaximumHours") != null)
@@ -256,6 +258,12 @@ namespace QBMigrationTool
                     if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursAvailable") != null)
                     {
                         string HoursAvailable = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursAvailable").InnerText;
+                        emp.VacationHoursOffer = 0;
+                        int vacHoursOffer;
+                        if (Int32.TryParse(HoursAvailable, out vacHoursOffer))
+                        {
+                            emp.VacationHoursOffer = vacHoursOffer;
+                        }
                     }
                     //Get value of AccrualPeriod
                     if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/AccrualPeriod") != null)
@@ -265,14 +273,7 @@ namespace QBMigrationTool
                     //Get value of HoursAccrued
                     if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursAccrued") != null)
                     {
-                        string HoursAccrued = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursAccrued").InnerText;
-                        // Store vac hours accrued each year
-                        emp.VacationHoursAnnualAccrual = 0;
-                        decimal vacHoursAnnualAccrual;
-                        if (Decimal.TryParse(HoursAccrued, out vacHoursAnnualAccrual))
-                        {
-                            emp.VacationHoursAnnualAccrual = vacHoursAnnualAccrual;
-                        }
+                        string HoursAccrued = EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/HoursAccrued").InnerText;                        
                     }
                     //Get value of MaximumHours
                     if (EmployeeRet.SelectSingleNode("./EmployeePayrollInfo/VacationHours/MaximumHours") != null)
