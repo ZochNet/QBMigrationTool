@@ -356,7 +356,7 @@ namespace QBMigrationTool
                         {
                             bl.Amount = amount;
                             bl.UnitCost = amount;
-                            bl.Quantity = 1;
+                            bl.Quantity = 1.0M;
                         }
                     }
 
@@ -481,8 +481,8 @@ namespace QBMigrationTool
                     if (Child.SelectSingleNode("./Quantity") != null)
                     {
                         string Quantity = Child.SelectSingleNode("./Quantity").InnerText;
-                        int quantity;
-                        if (Int32.TryParse(Quantity, out quantity))
+                        decimal quantity;
+                        if (Decimal.TryParse(Quantity, out quantity))
                         {
                             bl.Quantity = quantity;
                         }
@@ -709,8 +709,8 @@ namespace QBMigrationTool
                             if (ItemLineRet.SelectSingleNode("./Quantity") != null)
                             {
                                 string Quantity = ItemLineRet.SelectSingleNode("./Quantity").InnerText;
-                                int quantity;
-                                if (Int32.TryParse(Quantity, out quantity))
+                                decimal quantity;
+                                if (Decimal.TryParse(Quantity, out quantity))
                                 {
                                     bl.Quantity = quantity;
                                 }

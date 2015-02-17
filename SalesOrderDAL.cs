@@ -682,8 +682,8 @@ namespace QBMigrationTool
                     if (Child.SelectSingleNode("./Quantity") != null)
                     {
                         string Quantity = Child.SelectSingleNode("./Quantity").InnerText;
-                        int quantity;
-                        if (Int32.TryParse(Quantity, out quantity))
+                        decimal quantity;
+                        if (Decimal.TryParse(Quantity, out quantity))
                         {
                             sol.Quantity = quantity;
                         }
@@ -939,8 +939,8 @@ namespace QBMigrationTool
                             if (SalesOrderLineRet.SelectSingleNode("./Quantity") != null)
                             {
                                 string Quantity = SalesOrderLineRet.SelectSingleNode("./Quantity").InnerText;
-                                Int32 quantity;
-                                if (Int32.TryParse(Quantity, out quantity))
+                                decimal quantity;
+                                if (Decimal.TryParse(Quantity, out quantity))
                                 {
                                     sol.Quantity = quantity;
                                 }
