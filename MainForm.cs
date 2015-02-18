@@ -571,7 +571,7 @@ namespace QBMigrationTool
             DateTime nowTime = DateTime.Now;
             string dayOfWeek = nowTime.DayOfWeek.ToString();
             DateTime startTime = DateTime.Today.AddHours(18).AddMinutes(45);
-            DateTime endTime = DateTime.Today.AddHours(21).AddMinutes(15);
+            DateTime endTime = DateTime.Today.AddHours(22).AddMinutes(0);
             
             ClearStatus();
             SetStatus("");
@@ -925,7 +925,7 @@ namespace QBMigrationTool
             // Exception for VehicleMileage due to bug in Quickbooks where querying against modified date gets all the mileage--so have to use transaction date, back N days.
             // "yyyy-MM-ddTHH:mm:ssK" or "yyyy-MM-dd"
             AppendStatus("Sync Vehicle Mileage...");              
-            string fromDateOnly = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -120, true);
+            string fromDateOnly = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -150, true);
             string toDateOnly = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, true);
             doc = VehicleMileageDAL.BuildQueryRequest(fromDateOnly, toDateOnly);
             response = SyncDataHelper(doc);
@@ -951,8 +951,9 @@ namespace QBMigrationTool
             VendorDAL.HandleResponse(response);
             AppendStatus("Done" + Environment.NewLine);
 
-            AppendStatus("Sync Bills...");              
+            AppendStatus("Sync Bills...");
             doc = BillDAL.BuildQueryRequest(fromDateTime, toDateTime);
+            //doc = BillDAL.BuildQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -282, true), XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -118, true));
             response = SyncDataHelper(doc);
             AppendStatus("Done" + Environment.NewLine + "Processing...");
             BillDAL.HandleResponse(response);
@@ -961,7 +962,7 @@ namespace QBMigrationTool
             BillDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
 
-            AppendStatus("Sync Credits...");              
+            AppendStatus("Sync Credits...");
             doc = VendorCreditDAL.BuildQueryRequest(fromDateTime, toDateTime);
             response = SyncDataHelper(doc);
             AppendStatus("Done" + Environment.NewLine + "Processing...");
@@ -971,7 +972,7 @@ namespace QBMigrationTool
             VendorCreditDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
 
-            AppendStatus("Sync Sales Orders...");              
+            AppendStatus("Sync Sales Orders...");            
             doc = SalesOrderDAL.BuildQueryRequest(fromDateTime, toDateTime);
             response = SyncDataHelper(doc);
             AppendStatus("Done" + Environment.NewLine + "Processing...");
