@@ -42,7 +42,7 @@ namespace QBMigrationTool
                 catch (System.Runtime.InteropServices.COMException e)
                 {
                     Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Error in DoRequest.  Retrying.  Details: " + e.ToString());
-                    MessageBox.Show("Outer: " + doc.OuterXml);
+                    //MessageBox.Show("Outer: " + doc.OuterXml);
                     errorOccurred = true;
                 }
                 catch (Exception e)

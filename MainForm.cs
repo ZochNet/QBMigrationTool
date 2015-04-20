@@ -571,7 +571,10 @@ namespace QBMigrationTool
             DateTime nowTime = DateTime.Now;
             string dayOfWeek = nowTime.DayOfWeek.ToString();
             DateTime startTime = DateTime.Today.AddHours(18).AddMinutes(45);
-            DateTime endTime = DateTime.Today.AddHours(22).AddMinutes(0);
+            DateTime endTime = DateTime.Today.AddHours(22).AddMinutes(15);
+
+            DateTime startTime2 = DateTime.Parse("2015-03-07 10:55:00.000");
+            DateTime endTime2 = DateTime.Parse("2015-03-07 15:05:00.000");
             
             ClearStatus();
             SetStatus("");
@@ -582,6 +585,12 @@ namespace QBMigrationTool
             if (dayOfWeek == "Thursday" && nowTime > startTime && nowTime < endTime)
             {
                 AppendStatus("Sync is disabled on Thursdays from " + startTime.ToString() + " to " + endTime.ToString());
+                AppendStatus(Environment.NewLine);
+                return;
+            }
+            if (nowTime > startTime2 && nowTime < endTime2)
+            {
+                AppendStatus("Sync is disabled on Saturday March 7 2015 from " + startTime2.ToString() + " to " + endTime2.ToString());
                 AppendStatus(Environment.NewLine);
                 return;
             }
@@ -1117,6 +1126,11 @@ namespace QBMigrationTool
 
             wo.InvoiceSubtotal = invoiceSubtotal;
 
+            if ((wo.CloseStatus == CloseStatus.Warranty) && (wo.InvoiceSubtotal > 0))
+            {
+                wo.InvoiceSubtotal *= -1.0;
+            }
+
             db.Entry(wo).State = EntityState.Modified;
             db.SaveChanges();
         }
@@ -1274,7 +1288,7 @@ namespace QBMigrationTool
 
             wo.EstDollarAmount = (double)totalSalePrice;
 
-            if (wo.CloseStatus == CloseStatus.Warranty)
+            if ((wo.CloseStatus == CloseStatus.Warranty) && (wo.EstDollarAmount > 0))
             {
                 wo.EstDollarAmount *= -1.0;
             }
@@ -1336,7 +1350,7 @@ namespace QBMigrationTool
                             salePrice = Amount * 1.15M;
                             break;
                         case "CORECHG":
-                            salePrice = Amount * 1.15M;
+                            salePrice = Amount * 1.30M;
                             break;
                         case "TRAVEL":
                             salePrice = Amount * 1.15M;
