@@ -599,6 +599,7 @@ namespace QBMigrationTool
             SyncDSRs();
             RemoveDSRTimeAndMileage();
             SyncVacationAndSickTime();
+            UpdateUtilization();
 
             int numUnsyncedWorkOrders = GetNumUnsyncedWorkOrders();
             int numUnsyncedDSRs = GetNumUnsyncedDSRs();
@@ -807,6 +808,56 @@ namespace QBMigrationTool
             db.Database.ExecuteSqlCommand("delete from MileageTrackings where QBTxnId in (select QBTxnId from DeletedMileageTrackings)");
             db.Database.ExecuteSqlCommand("delete from TimeTrackings where QBTxnId in (select QBTxnId from DeletedTimeTrackings)");
             
+            AppendStatus("Done");
+            AppendStatus(Environment.NewLine);
+        }
+
+        private void UpdateUtilization()
+        {
+            AppendStatus("Updating Utilization...");
+
+            RotoTrackDb db = new RotoTrackDb();
+
+            string sql = @"
+if object_id('tempdb..#temp') is not null drop table #temp
+
+declare @StartDate datetime, @EndDate datetime, @NextWednesday datetime
+
+select @NextWednesday = GETDATE()
+
+while (datepart(weekday, @NextWednesday) <> 4) begin
+   select @NextWednesday = dateadd(dd, 1, @NextWednesday) end
+
+select @StartDate = dateadd(dd, -55, @NextWednesday), @EndDate = @NextWednesday
+
+select
+   tt.QBEmployeeListID,
+   up.FirstName + ' ' + up.LastName Employee,
+   tt.BillableStatus,
+   tt.DateWorked,
+   st.Name ServiceType,
+   sum(tt.HoursWorked + (tt.MinutesWorked / 60.0)) Duration,
+   a.Name AreaName
+into #temp
+from TimeTrackings tt
+   join Areas a on tt.QBAreaListID = a.QBListId
+   join WorkOrders w on tt.QBWorkOrderListID = w.QBListId
+   join Customers c on w.CustomerId = c.Id
+   join ServiceTypes st on tt.QBServiceTypeListID = st.QBListId
+   join UserProfile up on a.Id = up.AreaId and tt.QBEmployeeListID = up.QBListId where DateWorked >= @StartDate and DateWorked <= @EndDate group by
+   tt.QBEmployeeListID,
+   up.FirstName + ' ' + up.LastName,
+   tt.BillableStatus,
+   tt.DateWorked,
+   st.Name,
+   a.Name
+
+delete Utilizations where DateWorked >= @StartDate
+
+insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatus, DateWorked, Duration ) select distinct QBEmployeeListID, Employee, AreaName, BillableStatus, DateWorked, Duration from #temp
+";
+            db.Database.ExecuteSqlCommand(sql);
+
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);
         }
