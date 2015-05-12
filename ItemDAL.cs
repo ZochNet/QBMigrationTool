@@ -2,6 +2,7 @@
 using rototrack_model;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -1007,32 +1008,36 @@ namespace QBMigrationTool
 
                 //Get value of Sublevel
                 string Sublevel = OR.SelectSingleNode("./ItemInventoryRet/Sublevel").InnerText;
+                */ 
+                  
                 //Get value of ManufacturerPartNumber
-                if (OR.SelectSingleNode("./ItemInventoryRet/ManufacturerPartNumber") != null)
+                if (OR.SelectSingleNode("./ManufacturerPartNumber") != null)
                 {
-                    string ManufacturerPartNumber = OR.SelectSingleNode("./ItemInventoryRet/ManufacturerPartNumber").InnerText;
-
+                    string ManufacturerPartNumber = OR.SelectSingleNode("./ManufacturerPartNumber").InnerText;
+                    o.ItemNumber = ManufacturerPartNumber;
                 }
+
                 //Get all field values for UnitOfMeasureSetRef aggregate 
-                XmlNode UnitOfMeasureSetRef = OR.SelectSingleNode("./ItemInventoryRet/UnitOfMeasureSetRef");
+                XmlNode UnitOfMeasureSetRef = OR.SelectSingleNode("./UnitOfMeasureSetRef");
                 if (UnitOfMeasureSetRef != null)
                 {
                     //Get value of ListID
-                    if (OR.SelectSingleNode("./ItemInventoryRet/UnitOfMeasureSetRef/ListID") != null)
+                    if (OR.SelectSingleNode("./UnitOfMeasureSetRef/ListID") != null)
                     {
-                        string ListID = OR.SelectSingleNode("./ItemInventoryRet/UnitOfMeasureSetRef/ListID").InnerText;
-
+                        string UOMListID = OR.SelectSingleNode("./UnitOfMeasureSetRef/ListID").InnerText;
+                        o.UnitOfMeasure = UOMListID;
                     }
+                    /*
                     //Get value of FullName
-                    if (OR.SelectSingleNode("./ItemInventoryRet/UnitOfMeasureSetRef/FullName") != null)
+                    if (OR.SelectSingleNode("./UnitOfMeasureSetRef/FullName") != null)
                     {
-                        string FullName = OR.SelectSingleNode("./ItemInventoryRet/UnitOfMeasureSetRef/FullName").InnerText;
-
+                        string UOMFullName = OR.SelectSingleNode("./UnitOfMeasureSetRef/FullName").InnerText;                        
                     }
-
+                    */
                 }
                 //Done with field values for UnitOfMeasureSetRef aggregate
-
+                
+                /*
                 //Get all field values for SalesTaxCodeRef aggregate 
                 XmlNode SalesTaxCodeRef = OR.SelectSingleNode("./ItemInventoryRet/SalesTaxCodeRef");
                 if (SalesTaxCodeRef != null)
@@ -1307,30 +1312,35 @@ namespace QBMigrationTool
 
                 //Get value of Sublevel
                 string Sublevel = OR.SelectSingleNode("./ItemInventoryAssemblyRet/Sublevel").InnerText;
+                */ 
+                
                 //Get value of ManufacturerPartNumber
-                if (OR.SelectSingleNode("./ItemInventoryAssemblyRet/ManufacturerPartNumber") != null)
+                if (OR.SelectSingleNode("./ManufacturerPartNumber") != null)
                 {
-                    string ManufacturerPartNumber = OR.SelectSingleNode("./ItemInventoryAssemblyRet/ManufacturerPartNumber").InnerText;
-
+                    string ManufacturerPartNumber = OR.SelectSingleNode("./ManufacturerPartNumber").InnerText;
+                    o.ItemNumber = ManufacturerPartNumber;
                 }
+
                 //Get all field values for UnitOfMeasureSetRef aggregate 
-                XmlNode UnitOfMeasureSetRef = OR.SelectSingleNode("./ItemInventoryAssemblyRet/UnitOfMeasureSetRef");
+                XmlNode UnitOfMeasureSetRef = OR.SelectSingleNode("./UnitOfMeasureSetRef");
                 if (UnitOfMeasureSetRef != null)
                 {
                     //Get value of ListID
-                    if (OR.SelectSingleNode("./ItemInventoryAssemblyRet/UnitOfMeasureSetRef/ListID") != null)
+                    if (OR.SelectSingleNode("./UnitOfMeasureSetRef/ListID") != null)
                     {
-                        string ListID = OR.SelectSingleNode("./ItemInventoryAssemblyRet/UnitOfMeasureSetRef/ListID").InnerText;
-
+                        string UOMListID = OR.SelectSingleNode("./UnitOfMeasureSetRef/ListID").InnerText;
+                        o.UnitOfMeasure = UOMListID;
                     }
+                    /*
                     //Get value of FullName
-                    if (OR.SelectSingleNode("./ItemInventoryAssemblyRet/UnitOfMeasureSetRef/FullName") != null)
+                    if (OR.SelectSingleNode("./UnitOfMeasureSetRef/FullName") != null)
                     {
-                        string FullName = OR.SelectSingleNode("./ItemInventoryAssemblyRet/UnitOfMeasureSetRef/FullName").InnerText;
-
+                        string UOMFullName = OR.SelectSingleNode("./UnitOfMeasureSetRef/FullName").InnerText;                       
                     }
-
+                    */
                 }
+
+                /*
                 //Done with field values for UnitOfMeasureSetRef aggregate
 
                 //Get all field values for SalesTaxCodeRef aggregate 
@@ -2503,6 +2513,7 @@ namespace QBMigrationTool
             if (db.Items.Any(f => f.QBListId == QBListId))
             {
                 o = db.Items.First(f => f.QBListId == QBListId);
+                db.Entry(o).State = EntityState.Modified;
             }
             else
             {

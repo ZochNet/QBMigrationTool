@@ -929,7 +929,7 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             string ownerID = "0";
             string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false);
             string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);
-                        
+                       
             // Sync all necessary data from QB
             AppendStatus("Sync Classes (Areas)...");              
             doc = ClassDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
@@ -996,6 +996,14 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             //doc = VehicleMileageDAL.BuildQueryRequest2(fromDateTime, toDateTime);
             //response = SyncDataHelper(doc, "Vehicle Mileage");
             //VehicleMileageDAL.HandleResponse(response);
+
+            AppendStatus("Sync UnitOfMeasures...");
+            doc = UOMDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);            
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
+            UOMDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
+
             AppendStatus("Sync Items...");                  
             doc = ItemDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
             //doc = ItemDAL.BuildQueryRequest(activeStatus);
