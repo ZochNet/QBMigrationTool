@@ -81,6 +81,10 @@ namespace QBMigrationTool
                     doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Pre-close HOLD");
                     break;
 
+                case CloseStatus.PreInvoice:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Pre-Invoice");
+                    break;
+
                 case CloseStatus.Approved:
                     doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Approved");
                     break;
