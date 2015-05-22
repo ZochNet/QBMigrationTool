@@ -331,6 +331,14 @@ namespace QBMigrationTool
                                     case "In Process":
                                         wo.CollectionStatus = CollectionStatus.InProcess;
                                         break;
+                                                                                
+                                    case "In Process - Customer Queue":
+                                        wo.CollectionStatus = CollectionStatus.InProcessCustomerQueue;
+                                        break;
+
+                                    case "In Process-Cust  Approve Paym":
+                                        wo.CollectionStatus = CollectionStatus.InProcessCustomerApprovePayment;
+                                        break;
 
                                     default:
                                         Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Unknown Collection Status");
