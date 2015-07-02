@@ -668,12 +668,17 @@ namespace QBMigrationTool
                 string Memo = InvoiceRet.SelectSingleNode("./Memo").InnerText;
 
             }
+            */
+
             //Get value of IsPaid
+            invoice.IsPaid = false;
             if (InvoiceRet.SelectSingleNode("./IsPaid") != null)
             {
                 string IsPaid = InvoiceRet.SelectSingleNode("./IsPaid").InnerText;
-
+                invoice.IsPaid = (IsPaid == "true") ? true : false;
             }
+
+            /*
             //Get all field values for CustomerMsgRef aggregate 
             XmlNode CustomerMsgRef = InvoiceRet.SelectSingleNode("./CustomerMsgRef");
             if (CustomerMsgRef != null)

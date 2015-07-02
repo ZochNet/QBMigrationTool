@@ -262,7 +262,8 @@ namespace QBMigrationTool
                         int vacHoursOffer;
                         if (Int32.TryParse(HoursAvailable, out vacHoursOffer))
                         {
-                            emp.VacationHoursOffer = vacHoursOffer;
+                            // mgruetzner-6/8/2015--Don't set this here any longer--it messes up the vacation calcs.  If we want to override the standard formula, do it in rototrack.
+                            //emp.VacationHoursOffer = vacHoursOffer;
                         }
                     }
                     //Get value of AccrualPeriod

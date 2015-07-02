@@ -61,6 +61,7 @@ namespace QBMigrationTool
         private Label label1;
         private Button buttonSyncWorkOrders;
         private Button buttonSyncSalesReps;
+        private Button buttonSyncVacSick;
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
@@ -156,6 +157,7 @@ namespace QBMigrationTool
             this.label1 = new System.Windows.Forms.Label();
             this.buttonSyncWorkOrders = new System.Windows.Forms.Button();
             this.buttonSyncSalesReps = new System.Windows.Forms.Button();
+            this.buttonSyncVacSick = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownSyncDuration)).BeginInit();
             this.SuspendLayout();
             // 
@@ -310,10 +312,21 @@ namespace QBMigrationTool
             this.buttonSyncSalesReps.UseVisualStyleBackColor = true;
             this.buttonSyncSalesReps.Click += new System.EventHandler(this.buttonSyncSalesReps_Click);
             // 
+            // buttonSyncVacSick
+            // 
+            this.buttonSyncVacSick.Location = new System.Drawing.Point(352, 38);
+            this.buttonSyncVacSick.Name = "buttonSyncVacSick";
+            this.buttonSyncVacSick.Size = new System.Drawing.Size(108, 23);
+            this.buttonSyncVacSick.TabIndex = 36;
+            this.buttonSyncVacSick.Text = "Sync Vac/Sick";
+            this.buttonSyncVacSick.UseVisualStyleBackColor = true;
+            this.buttonSyncVacSick.Click += new System.EventHandler(this.buttonSyncVacSick_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(801, 794);
+            this.Controls.Add(this.buttonSyncVacSick);
             this.Controls.Add(this.buttonSyncSalesReps);
             this.Controls.Add(this.buttonSyncWorkOrders);
             this.Controls.Add(this.label1);
@@ -1604,6 +1617,20 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             {
                 ClearStatus();
                 SyncSalesReps();
+            }
+            catch (Exception ex)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+                AppendStatus("Exception occurred!");
+            }
+        }
+
+        private void buttonSyncVacSick_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ClearStatus();
+                SyncVacationAndSickTime();
             }
             catch (Exception ex)
             {
