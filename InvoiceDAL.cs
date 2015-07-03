@@ -676,6 +676,12 @@ namespace QBMigrationTool
             {
                 string IsPaid = InvoiceRet.SelectSingleNode("./IsPaid").InnerText;
                 invoice.IsPaid = (IsPaid == "true") ? true : false;
+
+                if (db.WorkOrders.Any(f => f.QBListId == WorkOrderListID))
+                {
+                    WorkOrder wo = db.WorkOrders.Where(f => f.QBListId == WorkOrderListID).First();
+                    wo.IsPaid = invoice.IsPaid;
+                }
             }
 
             /*
