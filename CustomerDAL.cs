@@ -340,6 +340,10 @@ namespace QBMigrationTool
                                         wo.CollectionStatus = CollectionStatus.InProcessCustomerApprovePayment;
                                         break;
 
+                                    case "Paid":
+                                        wo.CollectionStatus = CollectionStatus.Paid;
+                                        break;
+
                                     default:
                                         Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Unknown Collection Status");
                                         break;
