@@ -355,7 +355,11 @@ namespace QBMigrationTool
 
                     if (gotInvoiceDeliveryStatus && gotInvoiceDeliveryStatusDate)
                     {
-                        wo.Status = WorkOrderStatus.Invoiced;
+                        // Don't update if we set it to Inactive above or if it was already set to Inactive
+                        if (wo.Status != WorkOrderStatus.Inactive)
+                        {
+                            wo.Status = WorkOrderStatus.Invoiced;
+                        }
                     }
 
                     db.SaveChanges();                    
