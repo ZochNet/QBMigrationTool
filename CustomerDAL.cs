@@ -344,6 +344,10 @@ namespace QBMigrationTool
                                         wo.CollectionStatus = CollectionStatus.Paid;
                                         break;
 
+                                    case "Write-off":
+                                        wo.CollectionStatus = CollectionStatus.WriteOff;
+                                        break;
+
                                     default:
                                         Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Unknown Collection Status");
                                         break;
