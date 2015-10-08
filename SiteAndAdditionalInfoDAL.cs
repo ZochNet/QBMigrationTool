@@ -52,7 +52,7 @@ namespace QBMigrationTool
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site Unit Number", site.UnitNumber);
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site County", site.County);
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site City/State", site.CityState);
-            doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site POAFE", site.POAFENumber);
+            doc = BuildDataExtModOrDelRq(doc, parent, listID, "Site POAFE", wo.POAFENumber);
             doc = BuildDataExtModOrDelRq(doc, parent, listID, "Work Order Sales Rep", salesRep);
 
             switch (wo.CloseStatus)

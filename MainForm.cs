@@ -1431,7 +1431,7 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
                             salePrice = Amount * 1.20M;
                             break;
                         default:
-                            salePrice = Amount * 1.30M;
+                            salePrice = Amount * 1.33M;
                             break;
                     }
                     return salePrice;
