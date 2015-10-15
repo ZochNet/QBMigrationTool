@@ -1213,7 +1213,15 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             }
 
             db.Entry(wo).State = EntityState.Modified;
-            db.SaveChanges();
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred: " + ex.ToString() + wo.Id.ToString() + "," + wo.InvoiceCreated.ToShortDateString() + "," + wo.InvoiceSubtotal.ToString() + db.GetValidationErrors().ToString());
+                throw (ex);
+            }
         }
 
         private void UpdateEstDollarAmountForWorkOrder(int woID)
