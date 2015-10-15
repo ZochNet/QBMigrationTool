@@ -1123,42 +1123,51 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
 
         private void UpdateEstDollarAmountForAllWorkOrdersThread()
         {
-            this.updateAmountThreadBusy = true;
-            
-            RotoTrackDb db = new RotoTrackDb();
+            try
+            {
+                this.updateAmountThreadBusy = true;
 
-            // Get active work orders that have a QBListID set
-            List<WorkOrder> woList = db.WorkOrders.Where(wo => wo.QBListId != null && (wo.statusValue == (int)WorkOrderStatus.Open || wo.statusValue == (int)WorkOrderStatus.PreClose || wo.statusValue == (int)WorkOrderStatus.PendingApproval || wo.statusValue == (int)WorkOrderStatus.PendingGMApproval || wo.statusValue == (int)WorkOrderStatus.ReadyToInvoice || wo.statusValue == (int)WorkOrderStatus.Invoiced)).ToList();
+                RotoTrackDb db = new RotoTrackDb();
 
-            //List<WorkOrder> woList = db.WorkOrders.Where(wo => wo.QBListId != null && (wo.statusValue == (int)WorkOrderStatus.Invoiced) && wo.Id > 4013 && wo.Id < 4654).OrderBy(f => f.Id).ToList();
+                // Get active work orders that have a QBListID set
+                List<WorkOrder> woList = db.WorkOrders.Where(wo => wo.QBListId != null && (wo.statusValue == (int)WorkOrderStatus.Open || wo.statusValue == (int)WorkOrderStatus.PreClose || wo.statusValue == (int)WorkOrderStatus.PendingApproval || wo.statusValue == (int)WorkOrderStatus.PendingGMApproval || wo.statusValue == (int)WorkOrderStatus.ReadyToInvoice || wo.statusValue == (int)WorkOrderStatus.Invoiced)).ToList();
 
-            int totalWo = woList.Count;
-            int currentWo = 1;
+                //List<WorkOrder> woList = db.WorkOrders.Where(wo => wo.QBListId != null && (wo.statusValue == (int)WorkOrderStatus.Invoiced) && wo.Id > 4013 && wo.Id < 4654).OrderBy(f => f.Id).ToList();
 
-            //for (int i = currentWo; i < totalWo; i++) {
-            foreach (WorkOrder wo in woList) {
-                //WorkOrder wo = woList.ToArray()[i];
-                AppendStatus("Syncing " + currentWo.ToString() + " of " + totalWo.ToString() + Environment.NewLine);
+                int totalWo = woList.Count;
+                int currentWo = 1;
 
-                if (wo.Status == WorkOrderStatus.Invoiced)
+                //for (int i = currentWo; i < totalWo; i++) {
+                foreach (WorkOrder wo in woList)
                 {
-                    UpdateInvoiceSubtotal(wo.Id);
-                }
-                else
-                {
-                    UpdateEstDollarAmountForWorkOrder(wo.Id);
+                    //WorkOrder wo = woList.ToArray()[i];
+                    AppendStatus("Syncing " + currentWo.ToString() + " of " + totalWo.ToString() + Environment.NewLine);
+
+                    if (wo.Status == WorkOrderStatus.Invoiced)
+                    {
+                        UpdateInvoiceSubtotal(wo.Id);
+                    }
+                    else
+                    {
+                        UpdateEstDollarAmountForWorkOrder(wo.Id);
+                    }
+
+                    currentWo++;
+
+                    if (this.stopUpdateAmountThread)
+                    {
+                        this.updateAmountThread.Abort();
+                    }
                 }
 
-                currentWo++;
-
-                if (this.stopUpdateAmountThread)
-                {
-                    this.updateAmountThread.Abort();
-                }
+                AppendStatus("Done" + Environment.NewLine);
+                this.updateAmountThreadBusy = false;
             }
-
-            AppendStatus("Done" + Environment.NewLine);
-            this.updateAmountThreadBusy = false;
+            catch (Exception ex)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred.  Exception details are: " + ex.ToString());
+                AppendStatus("Exception occurred!");
+            }
         }
         /*
         public static IEnumerable<t> DistinctBy<t>(this IEnumerable<t> list, Func<t, object> propertySelector)
