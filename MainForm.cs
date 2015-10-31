@@ -592,6 +592,7 @@ namespace QBMigrationTool
             ClearStatus();
             SetStatus("");
 
+            /*
             //AppendStatus(dayOfWeek);
             AppendStatus("NOTE: Sync is disabled on Thursdays from " + startTime.ToString() + " to " + endTime.ToString());
             AppendStatus(Environment.NewLine);
@@ -607,6 +608,7 @@ namespace QBMigrationTool
                 AppendStatus(Environment.NewLine);
                 return;
             }
+            */
             
             SyncWorkOrders();
             SyncDSRs();
@@ -1463,7 +1465,7 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             aTimer.Enabled = false;
             try
             {
-#if !LIVE_ROTO_DB_SYNC
+#if !DB_SYNC
                     DoSync();
                     ExportItemList();
 #else
@@ -1483,7 +1485,7 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
         {
             try
             {
-#if !LIVE_ROTO_DB_SYNC
+#if !DB_SYNC
                     DoSync();
                     ExportItemList();                    
 #else
@@ -1535,7 +1537,7 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
 
                 try
                 {
-#if !LIVE_ROTO_DB_SYNC
+#if !DB_SYNC
                     DoSync();
                     ExportItemList();
 #else
