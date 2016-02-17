@@ -274,6 +274,10 @@ namespace QBMigrationTool
                                         wo.ReasonForLostQuote = ReasonForLostQuote.LackOfProductChoice;
                                         break;
 
+                                        case "In-House (Customer)":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.InHouseCustomer;
+                                        break;
+
                                         case "None":
                                         wo.ReasonForLostQuote = ReasonForLostQuote.None;
                                         break;
