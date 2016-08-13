@@ -282,6 +282,11 @@ namespace QBMigrationTool
                                         wo.ReasonForLostQuote = ReasonForLostQuote.None;
                                         break;
 
+                                        case "Budgetary Estimate":
+                                        wo.ReasonForLostQuote = ReasonForLostQuote.BudgetaryEstimate;
+                                        break;
+                                        
+
                                     default:
                                         Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Unknown Reason for Lost Quote");
                                         break;
