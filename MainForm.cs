@@ -97,7 +97,7 @@ namespace QBMigrationTool
             }
             catch (Exception e)
             {
-                MessageBox.Show("Unable to access database.  Application will now exit.  Please make sure the database is accessible and try again.");
+                MessageBox.Show("Unable to access database.  Application will now exit.  Please make sure the database is accessible and try again." + e.Message);
                 throw(e);
             }                        
 		}
