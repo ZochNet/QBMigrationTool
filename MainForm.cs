@@ -1168,7 +1168,7 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             catch (Exception ex)
             {
                 Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred.  Exception details are: " + ex.ToString());
-                AppendStatus("Exception occurred!");
+                AppendStatus("Exception occurred!" + ": " + "Exception details are: " + ex.ToString());
             }
         }
         /*
