@@ -62,10 +62,12 @@ namespace QBMigrationTool
         private Button buttonSyncWorkOrders;
         private Button buttonSyncSalesReps;
         private Button buttonSyncVacSick;
-		/// <summary>
-		/// Required designer variable.
-		/// </summary>
-		private System.ComponentModel.Container components = null;
+        private Button buttonSyncSales;
+
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.Container components = null;
         #endregion
 
         #region Main Form Code
@@ -158,6 +160,7 @@ namespace QBMigrationTool
             this.buttonSyncWorkOrders = new System.Windows.Forms.Button();
             this.buttonSyncSalesReps = new System.Windows.Forms.Button();
             this.buttonSyncVacSick = new System.Windows.Forms.Button();
+            this.buttonSyncSales = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownSyncDuration)).BeginInit();
             this.SuspendLayout();
             // 
@@ -322,10 +325,21 @@ namespace QBMigrationTool
             this.buttonSyncVacSick.UseVisualStyleBackColor = true;
             this.buttonSyncVacSick.Click += new System.EventHandler(this.buttonSyncVacSick_Click);
             // 
+            // buttonSyncSales
+            // 
+            this.buttonSyncSales.Location = new System.Drawing.Point(477, 38);
+            this.buttonSyncSales.Name = "buttonSyncSales";
+            this.buttonSyncSales.Size = new System.Drawing.Size(108, 23);
+            this.buttonSyncSales.TabIndex = 37;
+            this.buttonSyncSales.Text = "Sync Sales";
+            this.buttonSyncSales.UseVisualStyleBackColor = true;
+            this.buttonSyncSales.Click += new System.EventHandler(this.buttonSyncSales_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(801, 794);
+            this.Controls.Add(this.buttonSyncSales);
             this.Controls.Add(this.buttonSyncVacSick);
             this.Controls.Add(this.buttonSyncSalesReps);
             this.Controls.Add(this.buttonSyncWorkOrders);
@@ -789,6 +803,49 @@ namespace QBMigrationTool
 
             AppendStatus("Done");
             AppendStatus(Environment.NewLine);
+        }
+
+        private void SyncSalesOrders()
+        {
+            RotoTrackDb db = new RotoTrackDb();
+
+            DateTime fromModifiedDate = DateTime.Parse("2021-10-11 00:00:00.000");
+            DateTime toModifiedDate = DateTime.Parse("2021-10-14 00:00:00.000");
+            toModifiedDate = DateTime.Now;
+
+            XmlDocument doc = null;
+            string response = "";
+   
+            string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate.ToShortDateString(), -1, false);
+            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(toModifiedDate.ToShortDateString(), 1, false);
+            MessageBox.Show(fromDateTime);
+            MessageBox.Show(toDateTime);
+            
+            try
+            {
+                AppendStatus("Sync Sales Orders...");            
+                doc = SalesOrderDAL.BuildQueryRequest(fromDateTime, toDateTime);
+                response = SyncDataHelper(doc);
+                MessageBox.Show(response);
+                //AppendStatus(response);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Error." + e.Message + e.StackTrace);
+                throw(e);
+            } 
+            
+            /*
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
+            SalesOrderDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
+            */
+
+            /*
+            AppendStatus("Removing deleted Sales Orders...");
+            SalesOrderDAL.RemoveDeleted();
+            AppendStatus("Done" + Environment.NewLine);
+            */
         }
 
         private void RemoveDSRTimeAndMileage()
@@ -1650,6 +1707,20 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             {
                 ClearStatus();
                 SyncVacationAndSickTime();
+            }
+            catch (Exception ex)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+                AppendStatus("Exception occurred!");
+            }
+        }
+
+        private void buttonSyncSales_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ClearStatus();
+                SyncSalesOrders();
             }
             catch (Exception ex)
             {
