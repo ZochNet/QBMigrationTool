@@ -593,6 +593,27 @@ namespace QBMigrationTool
         #endregion
 
         #region Main Sync Functions
+        private void ResetStatus()
+        {
+            ClearStatus();
+            SetStatus("");
+        }
+        private void TestLogging()
+        {
+            // Test error logging
+            AppendStatus("Testing error logging...");
+            if (!Logging.RototrackErrorLog("Starting sync."))
+            {
+                AppendStatus("WARNING: Error logging failing to send emails");
+                AppendStatus(Environment.NewLine);
+            }
+            else
+            {
+                AppendStatus("SUCCESS!");
+                AppendStatus(Environment.NewLine);
+            }
+        }
+
         private void DoSync()
         {
             DateTime nowTime = DateTime.Now;
@@ -602,9 +623,7 @@ namespace QBMigrationTool
 
             DateTime startTime2 = DateTime.Parse("2015-03-07 10:55:00.000");
             DateTime endTime2 = DateTime.Parse("2015-03-07 15:05:00.000");
-            
-            ClearStatus();
-            SetStatus("");
+           
 
             /*
             //AppendStatus(dayOfWeek);
@@ -622,8 +641,7 @@ namespace QBMigrationTool
                 AppendStatus(Environment.NewLine);
                 return;
             }
-            */
-            
+            */           
             SyncWorkOrders();
             SyncDSRs();
             RemoveDSRTimeAndMileage();
@@ -1523,6 +1541,8 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             try
             {
 #if !DB_SYNC
+                    ResetStatus();
+                    TestLogging();
                     DoSync();
                     ExportItemList();
 #else
@@ -1543,6 +1563,8 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             try
             {
 #if !DB_SYNC
+                    ResetStatus();
+                    TestLogging();
                     DoSync();
                     ExportItemList();                    
 #else
@@ -1595,6 +1617,8 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
                 try
                 {
 #if !DB_SYNC
+                    ResetStatus();
+                    TestLogging();
                     DoSync();
                     ExportItemList();
 #else
