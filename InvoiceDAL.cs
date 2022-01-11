@@ -11,20 +11,25 @@ namespace QBMigrationTool
 {
     public class InvoiceDAL
     {
-        public static void RemoveDeleted()
+        public static void RemoveDeleted(string fromModifiedDate, string toModifiedDate)
         {
-            XmlDocument doc = BuildDeletedRequest();
+            XmlDocument doc = BuildDeletedRequest(fromModifiedDate, toModifiedDate);
             string response = QBUtils.DoRequest(doc);
             HandleDeletedResponse(response);
         }
 
-        public static XmlDocument BuildDeletedRequest()
+        public static XmlDocument BuildDeletedRequest(string fromModifiedDate, string toModifiedDate)
         {
             XmlDocument doc = XmlUtils.MakeRequestDocument();
             XmlElement parent = XmlUtils.MakeRequestParentElement(doc);
             XmlElement TxnDeletedQueryRq = doc.CreateElement("TxnDeletedQueryRq");
             parent.AppendChild(TxnDeletedQueryRq);
             TxnDeletedQueryRq.AppendChild(XmlUtils.MakeSimpleElem(doc, "TxnDelType", "Invoice"));
+
+            XmlElement dateRangeFilter = doc.CreateElement("DeletedDateRangeFilter");
+            TxnDeletedQueryRq.AppendChild(dateRangeFilter);
+            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromDeletedDate", fromModifiedDate));
+            dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToDeletedDate", toModifiedDate));
 
             return doc;
         }

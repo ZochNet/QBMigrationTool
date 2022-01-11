@@ -63,6 +63,8 @@ namespace QBMigrationTool
         private Button buttonSyncSalesReps;
         private Button buttonSyncVacSick;
         private Button buttonSyncSales;
+        private Button button1;
+        private Button button2;
 
         /// <summary>
         /// Required designer variable.
@@ -161,6 +163,8 @@ namespace QBMigrationTool
             this.buttonSyncSalesReps = new System.Windows.Forms.Button();
             this.buttonSyncVacSick = new System.Windows.Forms.Button();
             this.buttonSyncSales = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownSyncDuration)).BeginInit();
             this.SuspendLayout();
             // 
@@ -297,7 +301,7 @@ namespace QBMigrationTool
             // 
             // buttonSyncWorkOrders
             // 
-            this.buttonSyncWorkOrders.Location = new System.Drawing.Point(120, 37);
+            this.buttonSyncWorkOrders.Location = new System.Drawing.Point(93, 37);
             this.buttonSyncWorkOrders.Name = "buttonSyncWorkOrders";
             this.buttonSyncWorkOrders.Size = new System.Drawing.Size(75, 23);
             this.buttonSyncWorkOrders.TabIndex = 34;
@@ -307,7 +311,7 @@ namespace QBMigrationTool
             // 
             // buttonSyncSalesReps
             // 
-            this.buttonSyncSalesReps.Location = new System.Drawing.Point(218, 37);
+            this.buttonSyncSalesReps.Location = new System.Drawing.Point(174, 37);
             this.buttonSyncSalesReps.Name = "buttonSyncSalesReps";
             this.buttonSyncSalesReps.Size = new System.Drawing.Size(108, 23);
             this.buttonSyncSalesReps.TabIndex = 35;
@@ -317,7 +321,7 @@ namespace QBMigrationTool
             // 
             // buttonSyncVacSick
             // 
-            this.buttonSyncVacSick.Location = new System.Drawing.Point(352, 38);
+            this.buttonSyncVacSick.Location = new System.Drawing.Point(288, 38);
             this.buttonSyncVacSick.Name = "buttonSyncVacSick";
             this.buttonSyncVacSick.Size = new System.Drawing.Size(108, 23);
             this.buttonSyncVacSick.TabIndex = 36;
@@ -327,7 +331,7 @@ namespace QBMigrationTool
             // 
             // buttonSyncSales
             // 
-            this.buttonSyncSales.Location = new System.Drawing.Point(477, 38);
+            this.buttonSyncSales.Location = new System.Drawing.Point(402, 38);
             this.buttonSyncSales.Name = "buttonSyncSales";
             this.buttonSyncSales.Size = new System.Drawing.Size(108, 23);
             this.buttonSyncSales.TabIndex = 37;
@@ -335,10 +339,32 @@ namespace QBMigrationTool
             this.buttonSyncSales.UseVisualStyleBackColor = true;
             this.buttonSyncSales.Click += new System.EventHandler(this.buttonSyncSales_Click);
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(516, 38);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(108, 23);
+            this.button1.TabIndex = 38;
+            this.button1.Text = "Sync Mileage";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.buttonSyncMileage_Click);
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(630, 38);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(108, 23);
+            this.button2.TabIndex = 39;
+            this.button2.Text = "Del Invoices";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.buttonRemoveDeletedInvoices_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(801, 794);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.buttonSyncSales);
             this.Controls.Add(this.buttonSyncVacSick);
             this.Controls.Add(this.buttonSyncSalesReps);
@@ -593,27 +619,6 @@ namespace QBMigrationTool
         #endregion
 
         #region Main Sync Functions
-        private void ResetStatus()
-        {
-            ClearStatus();
-            SetStatus("");
-        }
-        private void TestLogging()
-        {
-            // Test error logging
-            AppendStatus("Testing error logging...");
-            if (!Logging.RototrackErrorLog("Starting sync."))
-            {
-                AppendStatus("WARNING: Error logging failing to send emails");
-                AppendStatus(Environment.NewLine);
-            }
-            else
-            {
-                AppendStatus("SUCCESS!");
-                AppendStatus(Environment.NewLine);
-            }
-        }
-
         private void DoSync()
         {
             DateTime nowTime = DateTime.Now;
@@ -623,7 +628,9 @@ namespace QBMigrationTool
 
             DateTime startTime2 = DateTime.Parse("2015-03-07 10:55:00.000");
             DateTime endTime2 = DateTime.Parse("2015-03-07 15:05:00.000");
-           
+            
+            ClearStatus();
+            SetStatus("");
 
             /*
             //AppendStatus(dayOfWeek);
@@ -641,7 +648,8 @@ namespace QBMigrationTool
                 AppendStatus(Environment.NewLine);
                 return;
             }
-            */           
+            */
+            
             SyncWorkOrders();
             SyncDSRs();
             RemoveDSRTimeAndMileage();
@@ -658,7 +666,7 @@ namespace QBMigrationTool
             {
                 Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "There are " + numUnsyncedDSRs.ToString() + " DSRs that failed to sync with QB!");
             }
-
+            
             SyncQBData();
             
             AppendStatus("Sync Completed: " + DateTime.Now.ToString());
@@ -971,7 +979,7 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
         }
 
         private void ExportItemList()
-        {
+        {            
             AppendStatus("Exporting Item List...");
 
             string csv = BuildItemListCsv();
@@ -1019,7 +1027,7 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             string ownerID = "0";
             string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false);
             string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);
-                       
+            
             // Sync all necessary data from QB
             AppendStatus("Sync Classes (Areas)...");              
             doc = ClassDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);
@@ -1072,6 +1080,8 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             TimeTrackingDAL.HandleResponse(response);
             AppendStatus("Done" + Environment.NewLine);
             
+            
+            
             // Exception for VehicleMileage due to bug in Quickbooks where querying against modified date gets all the mileage--so have to use transaction date, back N days.
             // "yyyy-MM-ddTHH:mm:ssK" or "yyyy-MM-dd"
             AppendStatus("Sync Vehicle Mileage...");              
@@ -1082,11 +1092,13 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             AppendStatus("Done" + Environment.NewLine + "Processing...");
             VehicleMileageDAL.HandleResponse(response);
             AppendStatus("Done" + Environment.NewLine);
+            
                      
             //doc = VehicleMileageDAL.BuildQueryRequest2(fromDateTime, toDateTime);
             //response = SyncDataHelper(doc, "Vehicle Mileage");
             //VehicleMileageDAL.HandleResponse(response);
 
+            
             AppendStatus("Sync UnitOfMeasures...");
             doc = UOMDAL.BuildQueryRequest(activeStatus, fromDateTime, toDateTime);            
             response = SyncDataHelper(doc);
@@ -1139,7 +1151,7 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             AppendStatus("Removing deleted Sales Orders...");
             SalesOrderDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
-
+            
             AppendStatus("Sync Invoices...");
 
             //doc = InvoiceDAL.BuildQueryRequest(XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -600, false), toDateTime);
@@ -1149,7 +1161,8 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             InvoiceDAL.HandleResponse(response);
             AppendStatus("Done" + Environment.NewLine);
             AppendStatus("Removing deleted Invoices...");
-            InvoiceDAL.RemoveDeleted();
+            InvoiceDAL.RemoveDeleted(fromDateTime, toDateTime);            
+
             AppendStatus("Done" + Environment.NewLine);
             
             AppConfig.SetLastSyncTime(DateTime.Now);
@@ -1541,8 +1554,6 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             try
             {
 #if !DB_SYNC
-                    ResetStatus();
-                    TestLogging();
                     DoSync();
                     ExportItemList();
 #else
@@ -1563,8 +1574,6 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             try
             {
 #if !DB_SYNC
-                    ResetStatus();
-                    TestLogging();
                     DoSync();
                     ExportItemList();                    
 #else
@@ -1617,8 +1626,6 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
                 try
                 {
 #if !DB_SYNC
-                    ResetStatus();
-                    TestLogging();
                     DoSync();
                     ExportItemList();
 #else
@@ -1696,6 +1703,27 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             this.Close();
         }
         #endregion
+
+        private void buttonSyncMileage_Click(object sender, EventArgs e)
+        {
+            XmlDocument doc = null;            
+            string fromModifiedDate = AppConfig.GetLastSyncTime();                                    
+            string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false);
+            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);                      
+            
+            doc = VehicleMileageDAL.BuildQueryRequest2(fromDateTime, toDateTime);
+            AppendStatus(doc.OuterXml);
+        }
+        private void buttonRemoveDeletedInvoices_Click(object sender, EventArgs e)
+        {
+            XmlDocument doc = null;
+            string fromModifiedDate = AppConfig.GetLastSyncTime();                                    
+            string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate, -1, false);
+            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(DateTime.Now.ToShortDateString(), 1, false);   
+
+            doc = InvoiceDAL.BuildDeletedRequest(fromDateTime, toDateTime);
+            AppendStatus(doc.OuterXml);
+        }
 
         private void buttonSyncWorkOrders_Click(object sender, EventArgs e)
         {
