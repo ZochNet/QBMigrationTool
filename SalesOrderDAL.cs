@@ -505,9 +505,10 @@ namespace QBMigrationTool
                 string SalesTaxPercentage = SalesOrderRet.SelectSingleNode("./SalesTaxPercentage").InnerText;
             }
             //Get value of SalesTaxTotal
+            string TotalTax = "";
             if (SalesOrderRet.SelectSingleNode("./SalesTaxTotal") != null)
             {
-                string SalesTaxTotal = SalesOrderRet.SelectSingleNode("./SalesTaxTotal").InnerText;
+                TotalTax = SalesOrderRet.SelectSingleNode("./SalesTaxTotal").InnerText;
             }
             //Get value of TotalAmount
             string TotalAmount = "";
@@ -651,7 +652,7 @@ namespace QBMigrationTool
                     string TxnLineID = Child.SelectSingleNode("./TxnLineID").InnerText;
 
                     // Find existing or create new SalesOrderLine entry
-                    SalesOrderLine sol = FindOrCreateSalesOrderLine(db, TxnLineID, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, IsManuallyClosed, IsFullyInvoiced);
+                    SalesOrderLine sol = FindOrCreateSalesOrderLine(db, TxnLineID, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, IsManuallyClosed, IsFullyInvoiced, TotalTax);
 
                     //Get all field values for ItemRef aggregate
                     XmlNode ItemRef = Child.SelectSingleNode("./ItemRef");
@@ -908,7 +909,7 @@ namespace QBMigrationTool
                             string TxnLineID2 = SalesOrderLineRet.SelectSingleNode("./TxnLineID").InnerText;
 
                             // Find existing or create new SalesOrderLine entry
-                            SalesOrderLine sol = FindOrCreateSalesOrderLine(db, TxnLineID2, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, IsManuallyClosed, IsFullyInvoiced);
+                            SalesOrderLine sol = FindOrCreateSalesOrderLine(db, TxnLineID2, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, IsManuallyClosed, IsFullyInvoiced, TotalTax);
 
                             //Get all field values for ItemRef aggregate
                             XmlNode ItemRef = SalesOrderLineRet.SelectSingleNode("./ItemRef");
@@ -1138,7 +1139,7 @@ namespace QBMigrationTool
             db.SaveChanges();
         }
 
-        private static SalesOrderLine FindOrCreateSalesOrderLine(RotoTrackDb db, string TxnLineID, string TxnID, string TimeCreated, string TimeModified, string EditSequence, string TxnDate, string AmountDue, string IsManuallyClosed, string IsFullyInvoiced)
+        private static SalesOrderLine FindOrCreateSalesOrderLine(RotoTrackDb db, string TxnLineID, string TxnID, string TimeCreated, string TimeModified, string EditSequence, string TxnDate, string AmountDue, string IsManuallyClosed, string IsFullyInvoiced, string TotalTax)
         {
             SalesOrderLine sol = null;
             if (db.SalesOrderLines.Any(f => f.TxnLineId == TxnLineID))
@@ -1162,6 +1163,8 @@ namespace QBMigrationTool
             if (DateTime.TryParse(TxnDate, out txnDate)) sol.SalesOrderTxnDate = txnDate;
             decimal amountDue;
             if (Decimal.TryParse(AmountDue, out amountDue)) sol.SalesOrderTotalAmount = amountDue;
+            decimal totalTax;
+            if (Decimal.TryParse(TotalTax, out totalTax)) sol.SalesOrderTotalTax = totalTax;
 
             bool isManuallyClosed;
             if (bool.TryParse(IsManuallyClosed, out isManuallyClosed))

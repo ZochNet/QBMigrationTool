@@ -273,13 +273,20 @@ namespace QBMigrationTool
                         {
                             string PurchaseDesc = Child.SelectSingleNode("./PurchaseDesc").InnerText;
 
-                        }
-                        //Get value of PurchaseCost
-                        if (Child.SelectSingleNode("./PurchaseCost") != null)
-                        {
-                            string PurchaseCost = Child.SelectSingleNode("./PurchaseCost").InnerText;
+                        }                                             
 
+                        //Get value of PurchaseCost
+                        if (OR.SelectSingleNode("./PurchaseCost") != null)
+                        {
+                            string PurchaseCost = OR.SelectSingleNode("./PurchaseCost").InnerText;
+                            o.PurchaseCost = 0.0M;
+                            decimal amount;
+                            if (Decimal.TryParse(PurchaseCost, out amount))
+                            {
+                                o.PurchaseCost = amount;                        
+                            }
                         }
+                        
                         //Get all field values for ExpenseAccountRef aggregate 
                         XmlNode ExpenseAccountRef = Child.SelectSingleNode("./ExpenseAccountRef");
                         if (ExpenseAccountRef != null)
@@ -1104,6 +1111,21 @@ namespace QBMigrationTool
                     string PurchaseCost = OR.SelectSingleNode("./ItemInventoryRet/PurchaseCost").InnerText;
 
                 }
+                */
+
+                //Get value of PurchaseCost
+                if (OR.SelectSingleNode("./PurchaseCost") != null)
+                {
+                    string PurchaseCost = OR.SelectSingleNode("./PurchaseCost").InnerText;
+                    o.PurchaseCost = 0.0M;
+                    decimal amount;
+                    if (Decimal.TryParse(PurchaseCost, out amount))
+                    {
+                        o.PurchaseCost = amount;                        
+                    }
+                }
+
+                /*
                 //Get all field values for COGSAccountRef aggregate 
                 XmlNode COGSAccountRef = OR.SelectSingleNode("./ItemInventoryRet/COGSAccountRef");
                 if (COGSAccountRef != null)
@@ -1408,6 +1430,21 @@ namespace QBMigrationTool
                     string PurchaseCost = OR.SelectSingleNode("./ItemInventoryAssemblyRet/PurchaseCost").InnerText;
 
                 }
+                */
+
+                //Get value of PurchaseCost
+                if (OR.SelectSingleNode("./PurchaseCost") != null)
+                {
+                    string PurchaseCost = OR.SelectSingleNode("./PurchaseCost").InnerText;
+                    o.PurchaseCost = 0.0M;
+                    decimal amount;
+                    if (Decimal.TryParse(PurchaseCost, out amount))
+                    {
+                        o.PurchaseCost = amount;                        
+                    }
+                }
+
+                /*
                 //Get all field values for COGSAccountRef aggregate 
                 XmlNode COGSAccountRef = OR.SelectSingleNode("./ItemInventoryAssemblyRet/COGSAccountRef");
                 if (COGSAccountRef != null)
