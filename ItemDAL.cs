@@ -109,6 +109,7 @@ namespace QBMigrationTool
                 }
 
                 Item o = ItemDAL.FindOrCreateItem(db, ListID, EditSequence, TimeCreated, TimeModified, Name, FullName, IsActive, "ItemService");
+                o.PurchaseCost = 0.0M;
                 db.SaveChanges();
 
                 // Now call WalkItemServiceRet to store this in our service type table
@@ -273,20 +274,19 @@ namespace QBMigrationTool
                         {
                             string PurchaseDesc = Child.SelectSingleNode("./PurchaseDesc").InnerText;
 
-                        }                                             
+                        }                                                                                          
 
                         //Get value of PurchaseCost
                         if (OR.SelectSingleNode("./PurchaseCost") != null)
                         {
-                            string PurchaseCost = OR.SelectSingleNode("./PurchaseCost").InnerText;
-                            o.PurchaseCost = 0.0M;
+                            string PurchaseCost = OR.SelectSingleNode("./PurchaseCost").InnerText;                            
                             decimal amount;
                             if (Decimal.TryParse(PurchaseCost, out amount))
                             {
-                                o.PurchaseCost = amount;                        
+                                o.PurchaseCost += amount;                        
                             }
                         }
-                        
+                                                
                         //Get all field values for ExpenseAccountRef aggregate 
                         XmlNode ExpenseAccountRef = Child.SelectSingleNode("./ExpenseAccountRef");
                         if (ExpenseAccountRef != null)
@@ -393,6 +393,7 @@ namespace QBMigrationTool
                 }
 
                 Item o = ItemDAL.FindOrCreateItem(db, ListID, EditSequence, TimeCreated, TimeModified, Name, FullName, IsActive, "ItemNonInventory");
+                o.PurchaseCost = 0M;
                 db.SaveChanges();
 
                 /*
@@ -483,11 +484,13 @@ namespace QBMigrationTool
 
                 }
                 //Done with field values for SalesTaxCodeRef aggregate
-
+                */
                 XmlNodeList ORSalesPurchaseChildren = OR.SelectNodes("./ItemNonInventoryRet/*");
                 for (int i = 0; i < ORSalesPurchaseChildren.Count; i++)
                 {
                     XmlNode Child = ORSalesPurchaseChildren.Item(i);
+
+                    /*
                     if (Child.Name == "SalesOrPurchase")
                     {
                         //Get value of Desc
@@ -533,9 +536,11 @@ namespace QBMigrationTool
 
 
                     }
+                    */
 
                     if (Child.Name == "SalesAndPurchase")
                     {
+                        /*
                         //Get value of SalesDesc
                         if (Child.SelectSingleNode("./SalesDesc") != null)
                         {
@@ -574,12 +579,20 @@ namespace QBMigrationTool
                             string PurchaseDesc = Child.SelectSingleNode("./PurchaseDesc").InnerText;
 
                         }
+                        */
+
                         //Get value of PurchaseCost
                         if (Child.SelectSingleNode("./PurchaseCost") != null)
                         {
                             string PurchaseCost = Child.SelectSingleNode("./PurchaseCost").InnerText;
-
+                            decimal amount;
+                            if (Decimal.TryParse(PurchaseCost, out amount))
+                            {
+                                o.PurchaseCost += amount;                        
+                            }
                         }
+                                  
+                        /*
                         //Get all field values for ExpenseAccountRef aggregate 
                         XmlNode ExpenseAccountRef = Child.SelectSingleNode("./ExpenseAccountRef");
                         if (ExpenseAccountRef != null)
@@ -619,13 +632,14 @@ namespace QBMigrationTool
 
                         }
                         //Done with field values for PrefVendorRef aggregate
-
+                        */
 
                     }
 
 
                 }
 
+                /*
                 //Get value of ExternalGUID
                 if (OR.SelectSingleNode("./ItemNonInventoryRet/ExternalGUID") != null)
                 {
@@ -1674,6 +1688,21 @@ namespace QBMigrationTool
                     string PurchaseCost = OR.SelectSingleNode("./ItemFixedAssetRet/PurchaseCost").InnerText;
 
                 }
+                */
+
+                //Get value of PurchaseCost
+                if (OR.SelectSingleNode("./PurchaseCost") != null)
+                {
+                    string PurchaseCost = OR.SelectSingleNode("./PurchaseCost").InnerText;
+                    o.PurchaseCost = 0.0M;
+                    decimal amount;
+                    if (Decimal.TryParse(PurchaseCost, out amount))
+                    {
+                        o.PurchaseCost = amount;                        
+                    }
+                }
+
+                /*
                 //Get value of VendorOrPayeeName
                 if (OR.SelectSingleNode("./ItemFixedAssetRet/VendorOrPayeeName") != null)
                 {
@@ -2593,6 +2622,7 @@ namespace QBMigrationTool
 
             string Name = ItemServiceRet.SelectSingleNode("./FullName").InnerText;
             st.Name = Name;
+            //st.PurchaseCost = 0M;
 
             string IsActive = "false";
             if (ItemServiceRet.SelectSingleNode("./IsActive") != null)
@@ -2646,6 +2676,15 @@ namespace QBMigrationTool
                         string SalesPrice = Child.SelectSingleNode("./SalesPrice").InnerText;
                         st.Price = SalesPrice;
                     }
+                    if (Child.SelectSingleNode("./PurchaseCost") != null)
+                    {
+                        string PurchaseCost = Child.SelectSingleNode("./PurchaseCost").InnerText;
+                        decimal amount;
+                        if (Decimal.TryParse(PurchaseCost, out amount))
+                        {
+                            //st.PurchaseCost += amount;                        
+                        }
+                    }   
                 }
             }
 

@@ -65,6 +65,7 @@ namespace QBMigrationTool
         private Button buttonSyncSales;
         private Button button1;
         private Button button2;
+        private Button buttonSyncItems;
 
         /// <summary>
         /// Required designer variable.
@@ -165,6 +166,7 @@ namespace QBMigrationTool
             this.buttonSyncSales = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
+            this.buttonSyncItems = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownSyncDuration)).BeginInit();
             this.SuspendLayout();
             // 
@@ -359,10 +361,21 @@ namespace QBMigrationTool
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.buttonRemoveDeletedInvoices_Click);
             // 
+            // buttonSyncItems
+            // 
+            this.buttonSyncItems.Location = new System.Drawing.Point(744, 38);
+            this.buttonSyncItems.Name = "buttonSyncItems";
+            this.buttonSyncItems.Size = new System.Drawing.Size(108, 23);
+            this.buttonSyncItems.TabIndex = 40;
+            this.buttonSyncItems.Text = "Sync Items";
+            this.buttonSyncItems.UseVisualStyleBackColor = true;
+            this.buttonSyncItems.Click += new System.EventHandler(this.buttonSyncItems_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
-            this.ClientSize = new System.Drawing.Size(801, 794);
+            this.ClientSize = new System.Drawing.Size(880, 794);
+            this.Controls.Add(this.buttonSyncItems);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.buttonSyncSales);
@@ -872,6 +885,19 @@ namespace QBMigrationTool
             SalesOrderDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
             */
+        }
+
+        private void SyncItems()
+        {
+            RotoTrackDb db = new RotoTrackDb();
+            string activeStatus = "All";
+
+            AppendStatus("Sync Items...");                  
+            XmlDocument doc = ItemDAL.BuildQueryRequest(activeStatus);
+            string response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
+            ItemDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);                        
         }
 
         private void RemoveDSRTimeAndMileage()
@@ -1773,6 +1799,20 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             {
                 ClearStatus();
                 SyncSalesOrders();
+            }
+            catch (Exception ex)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+                AppendStatus("Exception occurred!");
+            }
+        }
+
+        private void buttonSyncItems_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ClearStatus();
+                SyncItems();
             }
             catch (Exception ex)
             {
