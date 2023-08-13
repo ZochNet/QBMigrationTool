@@ -66,6 +66,7 @@ namespace QBMigrationTool
         private Button button1;
         private Button button2;
         private Button buttonSyncItems;
+        private Button buttonSyncEstimates;
 
         /// <summary>
         /// Required designer variable.
@@ -167,6 +168,7 @@ namespace QBMigrationTool
             this.button1 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.buttonSyncItems = new System.Windows.Forms.Button();
+            this.buttonSyncEstimates = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownSyncDuration)).BeginInit();
             this.SuspendLayout();
             // 
@@ -371,10 +373,21 @@ namespace QBMigrationTool
             this.buttonSyncItems.UseVisualStyleBackColor = true;
             this.buttonSyncItems.Click += new System.EventHandler(this.buttonSyncItems_Click);
             // 
+            // buttonSyncEstimates
+            // 
+            this.buttonSyncEstimates.Location = new System.Drawing.Point(744, 67);
+            this.buttonSyncEstimates.Name = "buttonSyncEstimates";
+            this.buttonSyncEstimates.Size = new System.Drawing.Size(108, 23);
+            this.buttonSyncEstimates.TabIndex = 41;
+            this.buttonSyncEstimates.Text = "Sync Estimates";
+            this.buttonSyncEstimates.UseVisualStyleBackColor = true;
+            this.buttonSyncEstimates.Click += new System.EventHandler(this.buttonSyncEstimates_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
             this.ClientSize = new System.Drawing.Size(880, 794);
+            this.Controls.Add(this.buttonSyncEstimates);
             this.Controls.Add(this.buttonSyncItems);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
@@ -844,12 +857,67 @@ namespace QBMigrationTool
             AppendStatus(Environment.NewLine);
         }
 
+
+        private void SyncEstimates()
+        {
+            RotoTrackDb db = new RotoTrackDb();
+
+            DateTime fromModifiedDate = DateTime.Parse("2019-05-31 00:00:00.000");
+            //DateTime fromModifiedDate = DateTime.Parse("2023-8-1 00:00:00.000");
+            DateTime toModifiedDate = DateTime.Parse("2023-9-1 00:00:00.000");
+            toModifiedDate = DateTime.Now;
+
+            XmlDocument doc = null;
+            string response = "";
+   
+            string fromDateTime = XmlUtils.GetAdjustedDateAsQBString(fromModifiedDate.ToShortDateString(), -1, false);
+            string toDateTime = XmlUtils.GetAdjustedDateAsQBString(toModifiedDate.ToShortDateString(), 1, false);
+            MessageBox.Show(fromDateTime);
+            MessageBox.Show(toDateTime);
+            
+            try
+            {
+                AppendStatus("Sync Estimates...");            
+                doc = EstimateDAL.BuildQueryRequest(fromDateTime, toDateTime);
+                response = SyncDataHelper(doc);
+                //MessageBox.Show(response);
+                AppendStatus(response);
+                
+                AppendStatus("Done" + Environment.NewLine + "Processing...");
+                EstimateDAL.HandleResponse(response);
+                //AppendStatus("Done" + Environment.NewLine);                
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Error!");
+                MessageBox.Show("Error." + e.Message + e.StackTrace);
+                throw(e);
+            } 
+            finally
+            {
+                AppendStatus("Done" + Environment.NewLine);  
+            }
+            
+            /*
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
+            SalesOrderDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
+            */
+
+            /*
+            AppendStatus("Removing deleted Sales Orders...");
+            SalesOrderDAL.RemoveDeleted();
+            AppendStatus("Done" + Environment.NewLine);
+            */
+        }
+
         private void SyncSalesOrders()
         {
             RotoTrackDb db = new RotoTrackDb();
 
-            DateTime fromModifiedDate = DateTime.Parse("2021-10-11 00:00:00.000");
-            DateTime toModifiedDate = DateTime.Parse("2021-10-14 00:00:00.000");
+            DateTime fromModifiedDate = DateTime.Parse("2019-05-31 00:00:00.000");
+            //DateTime toModifiedDate = DateTime.Parse("2020-1-1 00:00:00.000");
+            DateTime toModifiedDate = DateTime.Parse("2023-9-1 00:00:00.000");
             toModifiedDate = DateTime.Now;
 
             XmlDocument doc = null;
@@ -865,14 +933,23 @@ namespace QBMigrationTool
                 AppendStatus("Sync Sales Orders...");            
                 doc = SalesOrderDAL.BuildQueryRequest(fromDateTime, toDateTime);
                 response = SyncDataHelper(doc);
-                MessageBox.Show(response);
-                //AppendStatus(response);
+                //MessageBox.Show(response);
+                AppendStatus(response);
+                
+                AppendStatus("Done" + Environment.NewLine + "Processing...");
+                SalesOrderDAL.HandleResponse(response);
+                //AppendStatus("Done" + Environment.NewLine);                
             }
             catch (Exception e)
             {
+                MessageBox.Show("Error!");
                 MessageBox.Show("Error." + e.Message + e.StackTrace);
                 throw(e);
             } 
+            finally
+            {
+                AppendStatus("Done" + Environment.NewLine);  
+            }
             
             /*
             AppendStatus("Done" + Environment.NewLine + "Processing...");
@@ -1176,6 +1253,16 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             AppendStatus("Done" + Environment.NewLine);
             AppendStatus("Removing deleted Sales Orders...");
             SalesOrderDAL.RemoveDeleted();
+            AppendStatus("Done" + Environment.NewLine);
+
+            AppendStatus("Sync Estimates...");            
+            doc = EstimateDAL.BuildQueryRequest(fromDateTime, toDateTime);
+            response = SyncDataHelper(doc);
+            AppendStatus("Done" + Environment.NewLine + "Processing...");
+            EstimateDAL.HandleResponse(response);
+            AppendStatus("Done" + Environment.NewLine);
+            AppendStatus("Removing deleted Estimates...");
+            EstimateDAL.RemoveDeleted();
             AppendStatus("Done" + Environment.NewLine);
             
             AppendStatus("Sync Invoices...");
@@ -1793,6 +1880,20 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             }
         }
 
+        private void buttonSyncEstimates_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ClearStatus();
+                SyncEstimates();
+            }
+            catch (Exception ex)
+            {
+                Logging.RototrackErrorLog("QBMigrationTool: " + RototrackConfig.GetBuildType() + ": " + "Exception occurred and ok to ignore and try again.  Exception details are: " + ex.ToString());
+                AppendStatus("Exception occurred!");
+            }
+        }
+
         private void buttonSyncSales_Click(object sender, EventArgs e)
         {
             try
@@ -1820,6 +1921,5 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
                 AppendStatus("Exception occurred!");
             }
         }
-
     }
 }

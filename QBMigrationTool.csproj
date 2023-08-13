@@ -183,6 +183,7 @@
     </Compile>
     <Compile Include="BillDAL.cs" />
     <Compile Include="ClassDAL.cs" />
+    <Compile Include="EstimateDAL.cs" />
     <Compile Include="UOMDAL.cs" />
     <Compile Include="VendorCreditDAL.cs" />
     <Compile Include="CustomerDAL.cs" />
