@@ -1294,8 +1294,8 @@ insert Utilizations ( QBEmployeeListID, Employee, PrimaryAreaName, BillableStatu
             {
                 bool doUpdate = false;
                 DateTime nowTime = DateTime.Now;
-                DateTime startTime = DateTime.Today.AddHours(2).AddMinutes(45);
-                DateTime endTime = DateTime.Today.AddHours(3).AddMinutes(0);
+                DateTime startTime = DateTime.Today.AddHours(22).AddMinutes(45);
+                DateTime endTime = DateTime.Today.AddHours(23).AddMinutes(0);
                 
                 if (nowTime > startTime && nowTime < endTime)
                 {
