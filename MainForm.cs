@@ -915,7 +915,7 @@ namespace QBMigrationTool
         {
             RotoTrackDb db = new RotoTrackDb();
 
-            DateTime fromModifiedDate = DateTime.Parse("2019-05-31 00:00:00.000");
+            DateTime fromModifiedDate = DateTime.Parse("2019-05-31 00:00:00.000");  //5-31-2019
             //DateTime toModifiedDate = DateTime.Parse("2020-1-1 00:00:00.000");
             DateTime toModifiedDate = DateTime.Parse("2023-9-1 00:00:00.000");
             toModifiedDate = DateTime.Now;

@@ -41,6 +41,7 @@ namespace QBMigrationTool
             dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
             dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));                        
             queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "IncludeLineItems", "1"));
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "IncludeLinkedTxns", "1"));
 
             return doc;
         }
@@ -614,6 +615,8 @@ namespace QBMigrationTool
             {
                 string ExternalGUID = SalesOrderRet.SelectSingleNode("./ExternalGUID").InnerText;
             }
+
+            string LinkedTxnID = "";
             //Walk list of LinkedTxn aggregates
             XmlNodeList LinkedTxnList = SalesOrderRet.SelectNodes("./LinkedTxn");
             if (LinkedTxnList != null)
@@ -625,6 +628,16 @@ namespace QBMigrationTool
                     string TxnID2 = LinkedTxn.SelectSingleNode("./TxnID").InnerText;
                     //Get value of TxnType
                     string TxnType = LinkedTxn.SelectSingleNode("./TxnType").InnerText;
+
+                    //if (TxnType == "Estimate")
+                    //{
+                        if (LinkedTxnID != "")
+                        {
+                            LinkedTxnID += ",";
+                        }
+                        LinkedTxnID += TxnID2;
+                    //}
+
                     //Get value of TxnDate
                     string TxnDate2 = LinkedTxn.SelectSingleNode("./TxnDate").InnerText;
                     //Get value of RefNumber
@@ -652,7 +665,7 @@ namespace QBMigrationTool
                     string TxnLineID = Child.SelectSingleNode("./TxnLineID").InnerText;
 
                     // Find existing or create new SalesOrderLine entry
-                    SalesOrderLine sol = FindOrCreateSalesOrderLine(db, TxnLineID, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, IsManuallyClosed, IsFullyInvoiced, TotalTax);
+                    SalesOrderLine sol = FindOrCreateSalesOrderLine(db, TxnLineID, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, IsManuallyClosed, IsFullyInvoiced, TotalTax, LinkedTxnID);
 
                     //Get all field values for ItemRef aggregate
                     XmlNode ItemRef = Child.SelectSingleNode("./ItemRef");
@@ -909,7 +922,7 @@ namespace QBMigrationTool
                             string TxnLineID2 = SalesOrderLineRet.SelectSingleNode("./TxnLineID").InnerText;
 
                             // Find existing or create new SalesOrderLine entry
-                            SalesOrderLine sol = FindOrCreateSalesOrderLine(db, TxnLineID2, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, IsManuallyClosed, IsFullyInvoiced, TotalTax);
+                            SalesOrderLine sol = FindOrCreateSalesOrderLine(db, TxnLineID2, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, IsManuallyClosed, IsFullyInvoiced, TotalTax, LinkedTxnID);
 
                             //Get all field values for ItemRef aggregate
                             XmlNode ItemRef = SalesOrderLineRet.SelectSingleNode("./ItemRef");
@@ -1139,7 +1152,7 @@ namespace QBMigrationTool
             db.SaveChanges();
         }
 
-        private static SalesOrderLine FindOrCreateSalesOrderLine(RotoTrackDb db, string TxnLineID, string TxnID, string TimeCreated, string TimeModified, string EditSequence, string TxnDate, string AmountDue, string IsManuallyClosed, string IsFullyInvoiced, string TotalTax)
+        private static SalesOrderLine FindOrCreateSalesOrderLine(RotoTrackDb db, string TxnLineID, string TxnID, string TimeCreated, string TimeModified, string EditSequence, string TxnDate, string AmountDue, string IsManuallyClosed, string IsFullyInvoiced, string TotalTax, string LinkedTxnID)
         {
             SalesOrderLine sol = null;
             if (db.SalesOrderLines.Any(f => f.TxnLineId == TxnLineID))
@@ -1154,6 +1167,7 @@ namespace QBMigrationTool
 
             sol.TxnLineId = TxnLineID;
             sol.SalesOrderTxnId = TxnID;
+            sol.LinkedTxnID = LinkedTxnID;
             DateTime createdDate;
             if (DateTime.TryParse(TimeCreated, out createdDate)) sol.SalesOrderCreated = createdDate;
             DateTime modifiedDate;

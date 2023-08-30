@@ -69,6 +69,10 @@ namespace QBMigrationTool
                     doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Bill with Core");
                     break;
 
+                case CloseStatus.BillWithDiscount:
+                    doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Bill with Discount");
+                    break;
+
                 case CloseStatus.ClosedAtZeroDollars:
                     doc = BuildDataExtModOrDelRq(doc, parent, listID, "Close Status", "Closed at Zero $");
                     break;

@@ -41,7 +41,7 @@ namespace QBMigrationTool
             dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "FromModifiedDate", fromModifiedDate));
             dateRangeFilter.AppendChild(XmlUtils.MakeSimpleElem(doc, "ToModifiedDate", toModifiedDate));                        
             queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "IncludeLineItems", "1"));
-            //queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "IncludeLinkedTxns", "1"));
+            queryElement.AppendChild(XmlUtils.MakeSimpleElem(doc, "IncludeLinkedTxns", "1"));
 
             return doc;
         }
@@ -617,6 +617,8 @@ namespace QBMigrationTool
                 string ExternalGUID = EstimateRet.SelectSingleNode("./ExternalGUID").InnerText;
             }
             //Walk list of LinkedTxn aggregates
+
+            string LinkedTxnID = "";
             XmlNodeList LinkedTxnList = EstimateRet.SelectNodes("./LinkedTxn");
             if (LinkedTxnList != null)
             {
@@ -627,6 +629,14 @@ namespace QBMigrationTool
                     string TxnID2 = LinkedTxn.SelectSingleNode("./TxnID").InnerText;
                     //Get value of TxnType
                     string TxnType = LinkedTxn.SelectSingleNode("./TxnType").InnerText;
+                    //if (TxnType == "SalesOrder")
+                    //{
+                        if (LinkedTxnID != "")
+                        {
+                            LinkedTxnID += ",";
+                        }
+                        LinkedTxnID += TxnID2;
+                    //}
                     //Get value of TxnDate
                     string TxnDate2 = LinkedTxn.SelectSingleNode("./TxnDate").InnerText;
                     //Get value of RefNumber
@@ -654,7 +664,7 @@ namespace QBMigrationTool
                     string TxnLineID = Child.SelectSingleNode("./TxnLineID").InnerText;
 
                     // Find existing or create new EstimateLine entry
-                    EstimateLine el = FindOrCreateEstimateLine(db, TxnLineID, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, TotalTax, Subtotal);
+                    EstimateLine el = FindOrCreateEstimateLine(db, TxnLineID, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, TotalTax, Subtotal, LinkedTxnID);
 
                     //Get all field values for ItemRef aggregate
                     XmlNode ItemRef = Child.SelectSingleNode("./ItemRef");
@@ -938,7 +948,7 @@ namespace QBMigrationTool
                             string TxnLineID2 = EstimateLineRet.SelectSingleNode("./TxnLineID").InnerText;
 
                             // Find existing or create new EstimateLine entry
-                            EstimateLine el = FindOrCreateEstimateLine(db, TxnLineID2, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, TotalTax, Subtotal);
+                            EstimateLine el = FindOrCreateEstimateLine(db, TxnLineID2, TxnID, TimeCreated, TimeModified, EditSequence, TxnDate, TotalAmount, TotalTax, Subtotal, LinkedTxnID);
 
                             //Get all field values for ItemRef aggregate
                             XmlNode ItemRef = EstimateLineRet.SelectSingleNode("./ItemRef");
@@ -1195,7 +1205,7 @@ namespace QBMigrationTool
             db.SaveChanges();
         }
 
-        private static EstimateLine FindOrCreateEstimateLine(RotoTrackDb db, string TxnLineID, string TxnID, string TimeCreated, string TimeModified, string EditSequence, string TxnDate, string AmountDue, string TotalTax, string Subtotal)
+        private static EstimateLine FindOrCreateEstimateLine(RotoTrackDb db, string TxnLineID, string TxnID, string TimeCreated, string TimeModified, string EditSequence, string TxnDate, string AmountDue, string TotalTax, string Subtotal, string LinkedTxnID)
         {
             EstimateLine el = null;
             if (db.EstimateLines.Any(f => f.TxnLineId == TxnLineID))
@@ -1210,6 +1220,7 @@ namespace QBMigrationTool
 
             el.TxnLineId = TxnLineID;
             el.EstimateTxnId = TxnID;
+            el.LinkedTxnID = LinkedTxnID;
             DateTime createdDate;
             if (DateTime.TryParse(TimeCreated, out createdDate)) el.EstimateCreated = createdDate;
             DateTime modifiedDate;

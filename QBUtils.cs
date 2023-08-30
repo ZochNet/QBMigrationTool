@@ -108,7 +108,7 @@ namespace QBMigrationTool
         {
             string buildType = RototrackConfig.GetBuildType();
             bool validMatch = false;
-            if (filename.Contains("Roto-Versal") && buildType.Contains("ROTO"))
+            if (filename.ToLower().Contains("roto-versal") && buildType.Contains("ROTO"))
             {
                 validMatch = true;
             }
